@@ -270,7 +270,7 @@ async function enviarRascunho(videoId: string) {
 }
 
 async function horaCerta() {
-  const { data: cfg } = await admin.from("settings").select("post_hour, timezone, post_without_review, hold_on_check").eq("id", true).maybeSingle();
+  const { data: cfg } = await admin.from("settings").select("post_hour, post_hour_2, timezone, post_without_review, hold_on_check").eq("id", true).maybeSingle();
   const tz = cfg?.timezone ?? "America/Maceio";
   const agora = new Date();
   const hoje = new Intl.DateTimeFormat("sv-SE", { timeZone: tz }).format(agora);
@@ -284,15 +284,15 @@ async function enviarDevidos() {
   if (!cfg?.post_without_review) return { enviados: 0 };
   const { data: conta } = await admin.from("tiktok_account").select("open_id").eq("principal", true).maybeSingle();
   if (!conta) return { enviados: 0 };
-  const horaPost = String(cfg.post_hour).slice(0, 5);
+  const horaDoSlot = (slot: number) => String(slot === 2 ? cfg.post_hour_2 : cfg.post_hour).slice(0, 5);
   const { data: vids } = await admin
-    .from("videos").select("id, status, scheduled_for, final_path, scripts(status)")
+    .from("videos").select("id, status, scheduled_for, slot, final_path, scripts(status)")
     .eq("platform", "tiktok").in("status", ["pronto", "postado"]).not("final_path", "is", null).is("tiktok_status", null)
-    .lte("scheduled_for", hoje).order("scheduled_for");
+    .lte("scheduled_for", hoje).order("scheduled_for").order("slot");
   const devidos = (vids ?? []).filter((v: any) => {
     const st = Array.isArray(v.scripts) ? v.scripts[0]?.status : v.scripts?.status;
     if (cfg.hold_on_check && st === "conferir_fato") return false;
-    return v.scheduled_for < hoje || hora >= horaPost;
+    return v.scheduled_for < hoje || hora >= horaDoSlot(v.slot);
   }).slice(0, 2);
   const resultados: unknown[] = [];
   for (const v of devidos) resultados.push(await enviarRascunho(v.id));

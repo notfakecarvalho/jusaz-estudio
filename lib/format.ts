@@ -11,6 +11,10 @@ export function hojeMaceio() {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Maceio" }).format(new Date());
 }
 
+export function horaDoSlot(r: { post_hour: string; post_hour_2: string }, slot: number) {
+  return (slot === 2 ? r.post_hour_2 : r.post_hour).slice(0, 5);
+}
+
 export function palavras(texto: string) {
   return texto.trim().split(/\s+/).filter(Boolean).length;
 }

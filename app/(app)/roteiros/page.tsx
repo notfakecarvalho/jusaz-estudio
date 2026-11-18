@@ -2,7 +2,7 @@ import Link from "next/link";
 import { salvarRoteiro, marcarConferido } from "@/app/actions";
 import { listarRoteiros } from "@/lib/queries";
 import { ROTULO_ROTEIRO, palavras, segundosEstimados } from "@/lib/format";
-import { FECHO_ANTES, FECHO_DEPOIS, textoFalado } from "@/lib/types";
+import { CTA_ANTES, CTA_DEPOIS, FECHO_BASE, textoFalado } from "@/lib/types";
 
 const cls = { pronto: "b-ok", rascunho: "b-wait", conferir_fato: "b-warn" } as const;
 
@@ -28,7 +28,7 @@ export default async function Roteiros({ searchParams }: { searchParams: Promise
                 <strong>{r.title}</strong>
                 <span className={`badge ${cls[r.status]}`}>{ROTULO_ROTEIRO[r.status]}</span>
               </span>
-              <span className="muted" style={{ fontSize: 12 }}>Comenta {r.keyword}</span>
+              <span className="muted" style={{ fontSize: 12 }}>Palavra {r.keyword}</span>
             </Link>
           ))}
         </nav>
@@ -38,10 +38,10 @@ export default async function Roteiros({ searchParams }: { searchParams: Promise
             <div className="row wrap" style={{ justifyContent: "space-between" }}>
               <div className="row wrap">
                 <h2 style={{ fontSize: 24 }}>{atual.title}</h2>
-                <span className="chip">Comenta {atual.keyword}</span>
+                <span className="chip">Palavra {atual.keyword}</span>
               </div>
               <span className="muted">
-                {palavras(textoFalado(atual))} palavras · cerca de {Math.round(segundosEstimados(textoFalado(atual)))} s
+                {palavras(textoFalado(atual, "tiktok"))} palavras · cerca de {Math.round(segundosEstimados(textoFalado(atual, "tiktok")))} s
               </span>
             </div>
 
@@ -67,11 +67,14 @@ export default async function Roteiros({ searchParams }: { searchParams: Promise
               <div className="fld">
                 <label>Fecho padrão do JusAz</label>
                 <div className="fecho">
-                  <mark>{atual.closing_lead}</mark> {FECHO_ANTES}
-                  <mark>{atual.keyword}</mark>
-                  {FECHO_DEPOIS}
+                  <b>Instagram</b> · <mark>{atual.closing_lead}</mark> {FECHO_BASE} {CTA_ANTES.instagram} <mark>{atual.keyword}</mark>
+                  {CTA_DEPOIS}
                 </div>
-                <small>O fecho é igual em todos os vídeos. Só a ligação e a palavra mudam.</small>
+                <div className="fecho">
+                  <b>TikTok</b> · <mark>{atual.closing_lead}</mark> {FECHO_BASE} {CTA_ANTES.tiktok} <mark>{atual.keyword}</mark>
+                  {CTA_DEPOIS}
+                </div>
+                <small>Cada roteiro vira dois vídeos com a mesma história. Só a última frase muda: no Instagram a pessoa comenta, no TikTok ela chama no direct.</small>
               </div>
               <div className="fld">
                 <label htmlFor="caption">Legenda</label>

@@ -59,9 +59,12 @@ export async function alternarRegra(formData: FormData) {
 
 export async function salvarRegras(formData: FormData) {
   const sb = await supabaseServer();
-  const hora = String(formData.get("post_hour") ?? "12:00");
+  const hora = String(formData.get("post_hour") ?? "09:00");
+  const hora2 = String(formData.get("post_hour_2") ?? "18:00");
   const lead = Math.max(0, Math.min(14, Number(formData.get("lead_days") ?? 2)));
-  const { error } = await sb.from("settings").update({ post_hour: hora, lead_days: lead }).eq("id", true);
+  const valida = (h: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(h);
+  if (!valida(hora) || !valida(hora2)) return;
+  const { error } = await sb.from("settings").update({ post_hour: hora, post_hour_2: hora2, lead_days: lead }).eq("id", true);
   if (error) throw new Error(error.message);
   revalidatePath("/fila");
 }
@@ -97,7 +100,11 @@ export async function reagendar(formData: FormData) {
   const sb = await supabaseServer();
   const data = String(formData.get("scheduled_for") ?? "");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return;
-  const { error } = await sb.from("videos").update({ scheduled_for: data }).eq("id", String(formData.get("video_id")));
+  const slot = Number(formData.get("slot")) === 2 ? 2 : 1;
+  const { data: v } = await sb.from("videos").select("script_id").eq("id", String(formData.get("video_id"))).maybeSingle();
+  if (!v) return;
+  // As duas versões do roteiro (Instagram e TikTok) andam juntas.
+  const { error } = await sb.from("videos").update({ scheduled_for: data, slot }).eq("script_id", v.script_id);
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }

@@ -132,10 +132,11 @@ async function diaria() {
 
   const { data: videos } = await admin
     .from("videos")
-    .select("id, status, scheduled_for, platform, scripts(status)")
+    .select("id, status, scheduled_for, slot, platform, scripts(status)")
     .lte("scheduled_for", limite)
     .in("status", ["na_fila", "pronto"])
-    .order("scheduled_for");
+    .order("scheduled_for")
+    .order("slot");
 
   const seguro = (v: { scripts: unknown }) => {
     const st = (v.scripts as { status: string } | null)?.status;
@@ -158,9 +159,10 @@ async function diaria() {
 
   // 2) Postar: pronto, no dia e na hora combinados.
   if (cfg.post_without_review) {
-    const horaPost = String(cfg.post_hour).slice(0, 5);
+    // 1º vídeo do dia sai em post_hour, o 2º em post_hour_2.
+    const horaDoSlot = (slot: number) => String(slot === 2 ? cfg.post_hour_2 : cfg.post_hour).slice(0, 5);
     const prontos = (videos ?? []).filter(
-      (v) => v.platform === "instagram" && v.status === "pronto" && seguro(v) && v.scheduled_for && v.scheduled_for <= hoje && (v.scheduled_for < hoje || hora >= horaPost),
+      (v) => v.platform === "instagram" && v.status === "pronto" && seguro(v) && v.scheduled_for && v.scheduled_for <= hoje && (v.scheduled_for < hoje || hora >= horaDoSlot(v.slot)),
     );
     for (const v of prontos.slice(0, 1)) {
       const r = await publicar(v.id);

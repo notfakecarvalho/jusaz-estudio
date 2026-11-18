@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { alternarRegra, salvarRegras } from "@/app/actions";
 import { listarVideos, configuracoes } from "@/lib/queries";
-import { ROTULO_VIDEO, classeBadgeVideo, dataCurta, hojeMaceio } from "@/lib/format";
+import { ROTULO_VIDEO, classeBadgeVideo, dataCurta, hojeMaceio, horaDoSlot } from "@/lib/format";
 
 function Regra({ campo, valor, titulo, texto }: { campo: string; valor: boolean; titulo: string; texto: string }) {
   return (
@@ -20,36 +20,48 @@ function Regra({ campo, valor, titulo, texto }: { campo: string; valor: boolean;
 export default async function Fila() {
   const [videos, regras] = await Promise.all([listarVideos(), configuracoes()]);
   const hoje = hojeMaceio();
+  // Um cartão por roteiro: a versão do Instagram puxa a do TikTok, que tem o mesmo dia e horário.
+  const igs = videos.filter((v) => v.platform === "instagram");
+  const tiktokDe = new Map(videos.filter((v) => v.platform === "tiktok").map((v) => [v.script_id, v]));
 
   return (
     <>
       <div className="head">
         <div>
-          <span className="lbl">{videos.length} vídeos agendados</span>
+          <span className="lbl">{igs.length} roteiros agendados · 2 vídeos por dia</span>
           <h1>Fila</h1>
         </div>
       </div>
 
       <div className="cal">
-        {videos.map((v) => (
-          <Link key={v.id} href={`/videos/${v.id}`} className={`day ${v.scheduled_for === hoje ? "today" : ""}`}>
-            <small>{dataCurta(v.scheduled_for)}</small>
-            <strong>{v.scripts?.keyword}</strong>
-            <span style={{ fontSize: 13 }}>{v.scripts?.title}</span>
-            <span className="row wrap" style={{ gap: 6 }}>
-              <span className={`badge ${classeBadgeVideo(v.status)}`}>{ROTULO_VIDEO[v.status]}</span>
-              {v.scripts?.status === "conferir_fato" && <span className="badge b-warn">Conferir fato</span>}
-            </span>
-          </Link>
-        ))}
+        {igs.map((v) => {
+          const tk = tiktokDe.get(v.script_id);
+          return (
+            <Link key={v.id} href={`/videos/${v.id}`} className={`day ${v.scheduled_for === hoje ? "today" : ""}`}>
+              <small>{dataCurta(v.scheduled_for)} · {horaDoSlot(regras, v.slot)}</small>
+              <strong>{v.scripts?.keyword}</strong>
+              <span style={{ fontSize: 13 }}>{v.scripts?.title}</span>
+              <span className="row wrap" style={{ gap: 6 }}>
+                <span className={`badge ${classeBadgeVideo(v.status)}`}>Instagram: {ROTULO_VIDEO[v.status]}</span>
+                {tk && <span className={`badge ${classeBadgeVideo(tk.status)}`}>TikTok: {ROTULO_VIDEO[tk.status]}</span>}
+                {v.scripts?.status === "conferir_fato" && <span className="badge b-warn">Conferir fato</span>}
+                {v.scripts?.status === "rascunho" && <span className="badge b-wait">Rascunho</span>}
+              </span>
+            </Link>
+          );
+        })}
       </div>
 
       <section className="card stack">
         <h2 style={{ fontSize: 24 }}>Regras da automação</h2>
         <form action={salvarRegras} className="row wrap" style={{ alignItems: "flex-end" }}>
           <div className="fld" style={{ width: 160 }}>
-            <label htmlFor="post_hour">Hora da postagem</label>
+            <label htmlFor="post_hour">1º vídeo do dia</label>
             <input id="post_hour" name="post_hour" type="time" className="inp" defaultValue={regras.post_hour.slice(0, 5)} />
+          </div>
+          <div className="fld" style={{ width: 160 }}>
+            <label htmlFor="post_hour_2">2º vídeo do dia</label>
+            <input id="post_hour_2" name="post_hour_2" type="time" className="inp" defaultValue={regras.post_hour_2.slice(0, 5)} />
           </div>
           <div className="fld" style={{ width: 200 }}>
             <label htmlFor="lead_days">Gerar com antecedência (dias)</label>

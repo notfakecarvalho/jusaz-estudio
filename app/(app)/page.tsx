@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Pipeline } from "@/components/Pipeline";
 import { gerarVideo, postarAgora, marcarConferido, salvarLegenda } from "@/app/actions";
-import { dataCurta, hojeMaceio, ROTULO_VIDEO, classeBadgeVideo, palavras, segundosEstimados } from "@/lib/format";
+import { dataCurta, hojeMaceio, horaDoSlot, ROTULO_VIDEO, classeBadgeVideo, palavras, segundosEstimados } from "@/lib/format";
 import { listarVideos, ultimoJob, urlPublica, configuracoes } from "@/lib/queries";
 import { AVISO_OAB, textoFalado } from "@/lib/types";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -10,8 +10,15 @@ import type { Connection } from "@/lib/types";
 export default async function Hoje() {
   const hoje = hojeMaceio();
   const [videos, regras] = await Promise.all([listarVideos(hoje), configuracoes()]);
-  const video = videos.find((v) => v.scheduled_for === hoje) ?? videos[0];
-  const proximos = videos.filter((v) => v.id !== video?.id).slice(0, 6);
+  // A tela principal é a versão do Instagram; a do TikTok aparece ao lado, ligada ao mesmo roteiro.
+  const igs = videos.filter((v) => v.platform === "instagram");
+  const video =
+    igs.find((v) => v.scheduled_for === hoje && v.status !== "postado") ??
+    igs.find((v) => v.scheduled_for === hoje) ??
+    igs.find((v) => v.status !== "postado") ??
+    igs[0];
+  const versaoTiktok = video ? videos.find((v) => v.script_id === video.script_id && v.platform === "tiktok") : undefined;
+  const proximos = igs.filter((v) => v.id !== video?.id).slice(0, 6);
 
   if (!video || !video.scripts) {
     return (
@@ -29,7 +36,8 @@ export default async function Hoje() {
     sb.from("connections").select("*").eq("kind", "instagram").maybeSingle<Connection>(),
   ]);
   const igOk = ig?.status === "conectado";
-  const falado = textoFalado(s);
+  const falado = textoFalado(s, "instagram");
+  const horaPost = horaDoSlot(regras, video.slot);
   const legenda = video.caption ?? s.caption;
   const ativo = job && (job.status === "queued" || job.status === "running");
 
@@ -45,7 +53,7 @@ export default async function Hoje() {
     <>
       <div className="head">
         <div>
-          <span className="lbl">{dataCurta(video.scheduled_for)} · posta às {regras.post_hour.slice(0, 5)}</span>
+          <span className="lbl">{dataCurta(video.scheduled_for)} · posta às {horaPost}</span>
           <h1>Vídeo de hoje</h1>
         </div>
         <div className="row wrap">
@@ -71,7 +79,7 @@ export default async function Hoje() {
               <span className={`badge ${classeBadgeVideo(video.status)}`}>{ROTULO_VIDEO[video.status]}</span>
             </div>
             <p className="muted">{palavras(falado)} palavras · cerca de {Math.round(segundosEstimados(falado))} segundos falados</p>
-            <Pipeline video={video} job={job} quando={`${dataCurta(video.scheduled_for)}, ${regras.post_hour.slice(0, 5)}`} />
+            <Pipeline video={video} job={job} quando={`${dataCurta(video.scheduled_for)}, ${horaPost}`} />
             {video.error && <div className="toast t-warn" role="alert">{video.error}</div>}
           </section>
 
@@ -109,6 +117,18 @@ export default async function Hoje() {
             )}
           </section>
 
+          {versaoTiktok && (
+            <section className="card stack">
+              <h3 style={{ fontSize: 19 }}>Versão do TikTok</h3>
+              <div>
+                <div className="meta"><span>Vídeo</span><b><span className={`badge ${classeBadgeVideo(versaoTiktok.status)}`}>{ROTULO_VIDEO[versaoTiktok.status]}</span></b></div>
+                <div className="meta"><span>Rascunho no TikTok</span><b>{versaoTiktok.tiktok_status === "postado" ? "Publicado" : versaoTiktok.tiktok_status === "enviado" ? "Na sua caixa de entrada" : versaoTiktok.tiktok_status === "erro" ? "Falhou" : "Ainda não enviado"}</b></div>
+              </div>
+              <p className="muted" style={{ fontSize: 13 }}>Mesma história, mas a última frase chama a pessoa no direct em vez de pedir comentário.</p>
+              <div><Link className="btn btn-s btn-sm" href={`/videos/${versaoTiktok.id}`}>Abrir versão TikTok</Link></div>
+            </section>
+          )}
+
           <section className="card stack">
             <h3 style={{ fontSize: 19 }}>Prévia</h3>
             <div className="phone" style={{ alignSelf: "center" }}>
@@ -128,7 +148,7 @@ export default async function Hoje() {
           <div className="cal" style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}>
             {proximos.map((v) => (
               <Link key={v.id} href={`/videos/${v.id}`} className="day">
-                <small>{dataCurta(v.scheduled_for)}</small>
+                <small>{dataCurta(v.scheduled_for)} · {horaDoSlot(regras, v.slot)}</small>
                 <strong>{v.scripts?.keyword}</strong>
                 <span className={`badge ${classeBadgeVideo(v.status)}`} style={{ alignSelf: "flex-start" }}>{ROTULO_VIDEO[v.status]}</span>
               </Link>

@@ -22,8 +22,10 @@ export default async function Tiktok({ searchParams }: { searchParams: Promise<{
     sb.from("tiktok_videos").select("*, videos(scripts(title))").order("posted_at", { ascending: false }).limit(30).returns<Linha[]>(),
     sb.from("videos")
       .select("id, tiktok_status, tiktok_sent_at, tiktok_error, scheduled_for, status, final_path, scripts(title)")
+      .eq("platform", "tiktok")
       .or("tiktok_status.not.is.null,and(status.eq.pronto,final_path.not.is.null)")
       .order("scheduled_for", { ascending: true })
+      .order("slot", { ascending: true })
       .limit(20)
       .returns<Envio[]>(),
     sb.from("connections").select("*").eq("kind", "tiktok").maybeSingle<Connection>(),
