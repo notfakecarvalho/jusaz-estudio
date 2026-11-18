@@ -203,7 +203,7 @@ async function ligarVideos(openId: string) {
   if (!soltos?.length) return;
   const { data: envios } = await admin
     .from("videos").select("id, tiktok_status, tiktok_sent_at, duration_s")
-    .in("tiktok_status", ["enviado", "postado"]).not("tiktok_sent_at", "is", null);
+    .eq("platform", "tiktok").in("tiktok_status", ["enviado", "postado"]).not("tiktok_sent_at", "is", null);
   const { data: jaLigados } = await admin.from("tiktok_videos").select("video_id").not("video_id", "is", null);
   const usados = new Set((jaLigados ?? []).map((x) => x.video_id));
   for (const tv of soltos) {
@@ -214,7 +214,7 @@ async function ligarVideos(openId: string) {
     if (!alvo) continue;
     usados.add(alvo.id);
     await admin.from("tiktok_videos").update({ video_id: alvo.id }).eq("id", tv.id);
-    if (alvo.tiktok_status === "enviado") await admin.from("videos").update({ tiktok_status: "postado" }).eq("id", alvo.id);
+    if (alvo.tiktok_status === "enviado") await admin.from("videos").update({ tiktok_status: "postado", status: "postado", posted_at: tv.posted_at }).eq("id", alvo.id);
   }
 }
 
@@ -236,9 +236,9 @@ async function enviarRascunho(videoId: string) {
   // Reserva o vídeo para não enviar duas vezes.
   const { data: reservado } = await admin
     .from("videos").update({ tiktok_status: "enviado", tiktok_sent_at: new Date().toISOString(), tiktok_error: null, tiktok_publish_id: null })
-    .eq("id", videoId).or("tiktok_status.is.null,tiktok_status.eq.erro").select("id, final_path");
+    .eq("id", videoId).eq("platform", "tiktok").or("tiktok_status.is.null,tiktok_status.eq.erro").select("id, final_path");
   const v = reservado?.[0];
-  if (!v) return { erro: "Este vídeo já foi enviado ao TikTok." };
+  if (!v) return { erro: "Este vídeo já foi enviado ao TikTok, ou é a versão do Instagram." };
   const falhou = async (msg: string) => {
     await admin.from("videos").update({ tiktok_status: "erro", tiktok_error: msg.slice(0, 300) }).eq("id", videoId);
     return { erro: msg };
@@ -287,7 +287,7 @@ async function enviarDevidos() {
   const horaPost = String(cfg.post_hour).slice(0, 5);
   const { data: vids } = await admin
     .from("videos").select("id, status, scheduled_for, final_path, scripts(status)")
-    .in("status", ["pronto", "postado"]).not("final_path", "is", null).is("tiktok_status", null)
+    .eq("platform", "tiktok").in("status", ["pronto", "postado"]).not("final_path", "is", null).is("tiktok_status", null)
     .lte("scheduled_for", hoje).order("scheduled_for");
   const devidos = (vids ?? []).filter((v: any) => {
     const st = Array.isArray(v.scripts) ? v.scripts[0]?.status : v.scripts?.status;
@@ -312,7 +312,7 @@ async function acompanharEnvios() {
     if (!s.ok) continue;
     checados++;
     const st = String(s.data.status ?? "");
-    if (st === "PUBLISH_COMPLETE") await admin.from("videos").update({ tiktok_status: "postado" }).eq("id", v.id);
+    if (st === "PUBLISH_COMPLETE") await admin.from("videos").update({ tiktok_status: "postado", status: "postado", posted_at: new Date().toISOString() }).eq("id", v.id);
     else if (st === "FAILED") await admin.from("videos").update({ tiktok_status: "erro", tiktok_error: String(s.data.fail_reason ?? "O TikTok não conseguiu processar o vídeo.").slice(0, 300) }).eq("id", v.id);
   }
   return { checados };

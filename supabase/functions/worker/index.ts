@@ -9,7 +9,7 @@ const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
 
 const FECHO =
-  "o JusAz te ajuda a descobrir seus direitos: você faz sua pergunta de graça e advogados verificados pela OAB, de todo o Brasil, respondem. Comenta";
+  "o JusAz te ajuda a descobrir seus direitos: você faz sua pergunta de graça e advogados verificados pela OAB, de todo o Brasil, respondem.";
 
 async function autorizado(req: Request) {
   const t = req.headers.get("x-worker-token");
@@ -35,9 +35,9 @@ async function pegar(worker: string) {
   const { data: cfg } = await admin.from("settings").select("*").eq("id", true).single();
   return {
     job,
-    video: { id: video.id, scheduled_for: video.scheduled_for },
+    video: { id: video.id, scheduled_for: video.scheduled_for, plataforma: video.platform },
     roteiro: { slug: s.slug, titulo: s.title, palavra: s.keyword, gancho: s.hook },
-    texto: `${s.story} ${s.closing_lead} ${FECHO} ${s.keyword} que eu te mando o link.`,
+    texto: `${s.story} ${s.closing_lead} ${FECHO} ${video.platform === "tiktok" ? "Me chama no direct e manda" : "Comenta"} ${s.keyword} que eu te mando o link.`,
     config: { voz_id: cfg.voice_id, velocidade: cfg.voice_speed, musica_db: cfg.music_db },
   };
 }
