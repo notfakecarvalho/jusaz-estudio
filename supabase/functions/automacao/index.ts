@@ -104,7 +104,56 @@ async function publicar(videoId: string) {
     .from("videos")
     .update({ status: "postado", ig_media_id: pj.id, posted_at: new Date().toISOString(), error: null })
     .eq("id", videoId);
-  return { ok: true, media_id: pj.id };
+  const funil = await ligarFunil(videoId, pj.id as string);
+  return { ok: true, media_id: pj.id, funil };
+}
+
+// Funil comentário→mensagem do post: nasce LIGADO e amarrado ao post que acabou de sair
+// (só responde comentários feitos nele, com a palavra do roteiro). Não derruba a publicação se falhar.
+const FUNIL_RESPOSTA = "Te mandei os detalhes no direct! 💬";
+const FUNIL_DM = "Oi {nome}! Aqui está o caminho para você ver seus direitos de graça, com advogados verificados pela OAB:";
+const FUNIL_LINK = "https://jusaz.com";
+
+async function ligarFunil(videoId: string, mediaId: string) {
+  try {
+    const { data: v } = await admin.from("videos").select("posted_at, scripts(slug, keyword)").eq("id", videoId).maybeSingle();
+    const s = (Array.isArray(v?.scripts) ? v?.scripts[0] : v?.scripts) as { slug: string; keyword: string } | null;
+    if (!s?.keyword) return { erro: "Roteiro sem palavra-chave." };
+    // O funil aponta para o post; o post precisa existir na tabela (a leitura completa vem depois, a cada 2 minutos).
+    const agora = new Date().toISOString();
+    await admin.from("ig_posts").upsert(
+      { id: mediaId, video_id: videoId, media_type: "VIDEO", product_type: "REELS", posted_at: v?.posted_at ?? agora },
+      { onConflict: "id", ignoreDuplicates: true },
+    );
+    const { data: ja } = await admin.from("ig_flows").select("id").eq("post_id", mediaId).eq("keyword", s.keyword).maybeSingle();
+    if (ja) {
+      await admin.from("ig_flows").update({ active: true }).eq("id", ja.id);
+      return { ok: true, regra: ja.id, reaproveitada: true };
+    }
+    const { data: nova, error } = await admin.from("ig_flows").insert({
+      name: `Post · ${s.slug}`, keyword: s.keyword, post_id: mediaId, reply_public: FUNIL_RESPOSTA, dm_text: FUNIL_DM,
+      link_url: FUNIL_LINK, active: true, activated_at: agora,
+    }).select("id").single();
+    if (error) return { erro: error.message };
+    return { ok: true, regra: nova.id };
+  } catch (e) {
+    return { erro: (e as Error).message };
+  }
+}
+
+// Rede de segurança: todo vídeo já postado no Instagram precisa ter seu funil ligado.
+async function garantirFunis() {
+  const { data: postados } = await admin.from("videos").select("id, ig_media_id").eq("platform", "instagram").eq("status", "postado").not("ig_media_id", "is", null).limit(100);
+  if (!postados?.length) return { conferidos: 0, criados: 0 };
+  const { data: regras } = await admin.from("ig_flows").select("post_id, active").in("post_id", postados.map((p) => p.ig_media_id));
+  const com = new Map((regras ?? []).map((r) => [r.post_id, r.active]));
+  let criados = 0;
+  for (const p of postados) {
+    if (com.get(p.ig_media_id) === true) continue;
+    const r = await ligarFunil(p.id, p.ig_media_id as string);
+    if ((r as { ok?: boolean }).ok) criados++;
+  }
+  return { conferidos: postados.length, criados };
 }
 
 // Confere se o token e a conta do Instagram funcionam, sem postar nada.
@@ -177,6 +226,7 @@ async function diaria() {
       if ((r as { ok?: boolean }).ok) (relatorio.postados as string[]).push(v.id);
     }
   }
+  relatorio.funis = await garantirFunis();
   return relatorio;
 }
 
