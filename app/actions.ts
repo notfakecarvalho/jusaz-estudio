@@ -292,15 +292,23 @@ export async function desconectarTiktok() {
   volta("/conexoes", undefined, "TikTok desconectado.");
 }
 
-export async function atualizarTiktok() {
+async function sincronizarTiktok(destino: string): Promise<never> {
   const sb = await supabaseServer();
   const { data, error } = await sb.functions.invoke("tiktok", { body: { acao: "sincronizar" } });
   revalidatePath("/", "layout");
   const primeiro = (data?.metricas as { erro?: string; aviso?: string }[] | undefined)?.[0];
   const erro = error?.message ?? primeiro?.erro;
-  if (erro) volta("/insights?r=tiktok", String(erro));
-  if (primeiro?.aviso) volta("/insights?r=tiktok", primeiro.aviso);
-  volta("/insights?r=tiktok", undefined, "Métricas do TikTok atualizadas.");
+  if (erro) volta(destino, String(erro));
+  if (primeiro?.aviso) volta(destino, primeiro.aviso);
+  volta(destino, undefined, "TikTok atualizado.");
+}
+
+export async function atualizarTiktok() {
+  return sincronizarTiktok("/insights?r=tiktok");
+}
+
+export async function atualizarTiktokMenu() {
+  return sincronizarTiktok("/tiktok");
 }
 
 export async function enviarTiktok(formData: FormData) {
