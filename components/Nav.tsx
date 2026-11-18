@@ -24,6 +24,16 @@ const ICONS: Record<string, React.ReactNode> = {
     </>
   ),
   conexoes: <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" />,
+  instagram: (
+    <>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17" cy="7" r="0.6" />
+    </>
+  ),
+  funil: <path d="M3 4h18l-7 9v6l-4 2v-8z" />,
+  mensagens: <path d="M4 5h16v11H9l-5 4z" />,
+  ideias: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" />,
 };
 
 const ITENS = [
@@ -31,6 +41,10 @@ const ITENS = [
   { href: "/roteiros", key: "roteiros", label: "Roteiros" },
   { href: "/fila", key: "fila", label: "Fila" },
   { href: "/videos", key: "videos", label: "Vídeos" },
+  { href: "/instagram", key: "instagram", label: "Instagram" },
+  { href: "/funil", key: "funil", label: "Funil" },
+  { href: "/mensagens", key: "mensagens", label: "Mensagens" },
+  { href: "/ideias", key: "ideias", label: "Ideias" },
   { href: "/conexoes", key: "conexoes", label: "Conexões" },
 ];
 

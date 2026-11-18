@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
-import type { RenderJob, Script, Settings, Video } from "@/lib/types";
+import type { IgAccount, IgComment, IgPost, RenderJob, Script, Settings, Video } from "@/lib/types";
 
 export async function listarVideos(desde?: string) {
   const sb = await supabaseServer();
@@ -36,4 +36,28 @@ export async function configuracoes() {
 export function urlPublica(path: string | null) {
   if (!path) return null;
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${path}`;
+}
+
+export async function contaInstagram() {
+  const sb = await supabaseServer();
+  const { data } = await sb.from("ig_account").select("*").eq("id", true).maybeSingle<IgAccount>();
+  return data;
+}
+
+export async function postsInstagram(limite = 30) {
+  const sb = await supabaseServer();
+  const { data } = await sb.from("ig_posts").select("*").order("posted_at", { ascending: false }).limit(limite).returns<IgPost[]>();
+  return data ?? [];
+}
+
+export async function comentariosRecentes(limite = 25) {
+  const sb = await supabaseServer();
+  const { data } = await sb
+    .from("ig_comments")
+    .select("*")
+    .is("parent_id", null)
+    .order("commented_at", { ascending: false })
+    .limit(limite)
+    .returns<IgComment[]>();
+  return data ?? [];
 }

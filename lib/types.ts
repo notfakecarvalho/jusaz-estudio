@@ -82,3 +82,30 @@ export function textoFalado(s: Pick<Script, "story" | "closing_lead" | "keyword"
 
 export const AVISO_OAB =
   "Conteúdo informativo, não é aconselhamento jurídico. As histórias são ilustrativas.";
+
+export type IgAccount = {
+  ig_user_id: string | null; username: string | null; name: string | null; picture_url: string | null;
+  followers: number | null; follows: number | null; media_count: number | null; synced_at: string | null;
+};
+export type IgPost = {
+  id: string; caption: string | null; media_type: string | null; product_type: string | null; permalink: string | null;
+  thumb_url: string | null; posted_at: string | null; likes: number; comments_count: number; video_id: string | null;
+};
+export type IgFlow = {
+  id: string; name: string; keyword: string; post_id: string | null; reply_public: string; dm_text: string;
+  link_url: string | null; active: boolean; hits: number; activated_at: string | null;
+};
+export type IgComment = {
+  id: string; post_id: string | null; username: string | null; text: string; commented_at: string | null;
+  parent_id: string | null; flow_id: string | null; status: "novo" | "enviando" | "respondido" | "ignorado" | "erro";
+  dm_sent_at: string | null; error: string | null;
+};
+export type IgThread = {
+  id: string; participant_id: string | null; participant_username: string | null; last_message_at: string | null;
+  last_text: string | null; unread: boolean;
+};
+export type IgMessage = { id: string; thread_id: string; direction: "in" | "out"; text: string; via: string; created_at: string };
+export type Idea = {
+  id: string; title: string; hook: string | null; angle: string | null; keyword: string | null;
+  source: string; status: "nova" | "aprovada" | "descartada"; created_at: string;
+};

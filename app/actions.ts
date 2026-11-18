@@ -118,3 +118,121 @@ export async function testarInstagram() {
   if (error) throw new Error(error.message);
   revalidatePath("/conexoes");
 }
+
+// ---------- Instagram, funil, mensagens, ideias ----------
+function volta(caminho: string, erro?: string, ok?: string): never {
+  const q = new URLSearchParams();
+  if (erro) q.set("erro", erro);
+  if (ok) q.set("ok", ok);
+  redirect(q.size ? `${caminho}${caminho.includes("?") ? "&" : "?"}${q}` : caminho);
+}
+
+export async function atualizarInstagram() {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.functions.invoke("instagram", { body: { acao: "ciclo" } });
+  revalidatePath("/", "layout");
+  const erro = error?.message ?? data?.sincronizacao?.erro;
+  if (erro) volta("/instagram", String(erro));
+  volta("/instagram", undefined, "Instagram atualizado.");
+}
+
+export async function tentarDeNovo(formData: FormData) {
+  const sb = await supabaseServer();
+  await sb.from("ig_comments").update({ status: "novo", error: null }).eq("id", String(formData.get("id")));
+  revalidatePath("/instagram");
+}
+
+const limpaPalavra = (v: FormDataEntryValue | null) => String(v ?? "").trim().toUpperCase().replace(/\s+/g, "");
+
+export async function salvarFluxo(formData: FormData) {
+  const sb = await supabaseServer();
+  const id = String(formData.get("id") ?? "");
+  const link = String(formData.get("link_url") ?? "").trim();
+  const campos = {
+    name: String(formData.get("name") ?? "").trim() || "Regra",
+    keyword: limpaPalavra(formData.get("keyword")),
+    post_id: String(formData.get("post_id") ?? "") || null,
+    reply_public: String(formData.get("reply_public") ?? "").trim(),
+    dm_text: String(formData.get("dm_text") ?? "").trim(),
+    link_url: link || null,
+  };
+  if (!campos.keyword) volta("/funil", "Escolha a palavra que o comentário precisa ter.");
+  if (link && !/^https:\/\//i.test(link)) volta("/funil", "O link precisa começar com https://");
+  if (id) {
+    const { error } = await sb.from("ig_flows").update(campos).eq("id", id);
+    if (error) volta("/funil", error.message);
+  } else {
+    const { error } = await sb.from("ig_flows").insert(campos);
+    if (error) volta("/funil", error.message);
+  }
+  revalidatePath("/funil");
+  volta("/funil", undefined, "Regra salva.");
+}
+
+export async function alternarFluxo(formData: FormData) {
+  const sb = await supabaseServer();
+  const id = String(formData.get("id"));
+  const ligar = String(formData.get("ligar")) === "true";
+  if (ligar) {
+    const { data: f } = await sb.from("ig_flows").select("link_url, dm_text").eq("id", id).maybeSingle();
+    if (!f?.link_url || !f.dm_text) volta("/funil", "Preencha a mensagem privada e o link antes de ligar a regra.");
+  }
+  await sb.from("ig_flows").update({ active: ligar }).eq("id", id);
+  revalidatePath("/funil");
+  volta("/funil", undefined, ligar ? "Regra ligada. Só vale para comentários feitos daqui para frente." : "Regra desligada.");
+}
+
+export async function excluirFluxo(formData: FormData) {
+  const sb = await supabaseServer();
+  await sb.from("ig_flows").delete().eq("id", String(formData.get("id")));
+  revalidatePath("/funil");
+  volta("/funil", undefined, "Regra apagada.");
+}
+
+export async function enviarMensagem(formData: FormData) {
+  const thread = String(formData.get("thread_id"));
+  const sb = await supabaseServer();
+  const { data, error } = await sb.functions.invoke("instagram", {
+    body: { acao: "enviar", thread_id: thread, texto: String(formData.get("texto") ?? "") },
+  });
+  revalidatePath("/mensagens");
+  const erro = error?.message ?? data?.erro;
+  if (erro) volta(`/mensagens?c=${thread}`, String(erro));
+  volta(`/mensagens?c=${thread}`);
+}
+
+export async function gerarIdeias() {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.functions.invoke("ideias", { body: { acao: "gerar" } });
+  revalidatePath("/ideias");
+  const erro = error?.message ?? data?.erro;
+  if (erro) volta("/ideias", String(erro));
+  volta("/ideias", undefined, `${data?.criadas ?? 0} ideias novas.`);
+}
+
+export async function decidirIdeia(formData: FormData) {
+  const sb = await supabaseServer();
+  const id = String(formData.get("id"));
+  const decisao = String(formData.get("decisao"));
+  if (decisao === "roteiro") {
+    const { data: i } = await sb.from("ideas").select("*").eq("id", id).maybeSingle();
+    if (!i) volta("/ideias", "Ideia não encontrada.");
+    const { data: ult } = await sb.from("scripts").select("position").order("position", { ascending: false }).limit(1).maybeSingle();
+    const slug = String(i.title).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+    const { error } = await sb.from("scripts").insert({
+      position: (ult?.position ?? 0) + 1,
+      slug: `${slug}-${Date.now().toString(36)}`,
+      title: i.title,
+      keyword: String(i.keyword ?? "AJUDA").toUpperCase(),
+      hook: i.hook ?? "",
+      story: i.angle ?? "",
+      status: "rascunho",
+    });
+    if (error) volta("/ideias", error.message);
+    await sb.from("ideas").update({ status: "aprovada" }).eq("id", id);
+    revalidatePath("/ideias");
+    volta("/ideias", undefined, "Virou rascunho em Roteiros. Falta escrever a história e conferir os fatos.");
+  }
+  await sb.from("ideas").update({ status: decisao === "descartar" ? "descartada" : "nova" }).eq("id", id);
+  revalidatePath("/ideias");
+}

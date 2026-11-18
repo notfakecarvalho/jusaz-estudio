@@ -41,3 +41,33 @@ export function classeBadgeVideo(s: string) {
   if (s === "erro") return "b-warn";
   return "b-wait";
 }
+
+export function haQuanto(iso: string | null) {
+  if (!iso) return "nunca";
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "agora há pouco";
+  if (s < 3600) return `há ${Math.floor(s / 60)} min`;
+  if (s < 86400) return `há ${Math.floor(s / 3600)} h`;
+  return `há ${Math.floor(s / 86400)} d`;
+}
+
+export function numero(n: number | null | undefined) {
+  return n == null ? "—" : new Intl.NumberFormat("pt-BR").format(n);
+}
+
+export const ROTULO_COMENTARIO: Record<string, string> = {
+  novo: "Novo",
+  enviando: "Enviando",
+  respondido: "Respondido pelo funil",
+  ignorado: "Sem regra",
+  erro: "Erro",
+};
+
+export function classeBadgeComentario(s: string) {
+  if (s === "respondido") return "b-ok";
+  if (s === "enviando") return "b-run";
+  if (s === "erro") return "b-warn";
+  return "b-wait";
+}
+
+export const ROTULO_MIDIA: Record<string, string> = { VIDEO: "Reel", CAROUSEL_ALBUM: "Carrossel", IMAGE: "Foto" };

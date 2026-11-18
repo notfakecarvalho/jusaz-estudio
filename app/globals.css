@@ -187,3 +187,26 @@ select.inp { appearance: auto; }
   .steps { flex-direction: column; gap: 12px; }
   .st::before { display: none; }
 }
+
+/* Instagram, funil, mensagens */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; display: flex; flex-direction: column; gap: 2px; }
+.stat b { font: 700 28px 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+.avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--wait-bg); border: 2px solid var(--yellow); flex: none; }
+.postgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.post { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: var(--ink); }
+.post:hover { border-color: var(--primary); color: var(--ink); }
+.post .thumb { aspect-ratio: 4 / 5; width: 100%; object-fit: cover; background: linear-gradient(160deg, var(--primary), var(--ink)); display: block; }
+.post .body { padding: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.cm { padding: 12px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.cm:first-child { border-top: 0; }
+.chat { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; max-height: 520px; overflow-y: auto; }
+.bub { max-width: 78%; padding: 10px 14px; border-radius: 16px; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+.bub small { display: block; font-size: 11px; opacity: 0.7; margin-top: 2px; }
+.bub.in { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.bub.out { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+.dotnew { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); display: inline-block; flex: none; }
+@media (max-width: 1000px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .postgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

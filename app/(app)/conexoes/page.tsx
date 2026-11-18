@@ -68,7 +68,7 @@ export default async function Conexoes() {
 
         <section className="card stack">
           <Cabeca c={c("manychat")} titulo="ManyChat" sub="Comentário vira mensagem com o link" icone={<path d="M4 5h16v10H9l-5 4z" />} />
-          <p className="muted">A automação roda dentro do ManyChat. Aqui ficam só as palavras, para legenda e roteiro baterem com o gatilho.</p>
+          <p className="muted">Opcional. O funil de comentários agora roda dentro do estúdio, no menu Funil. Se você mantiver o ManyChat, as palavras abaixo precisam bater com as dele.</p>
           <div>
             {roteiros.slice(0, 5).map((r) => (
               <div key={r.id} className="meta"><span>{r.title}</span><b>{r.keyword}</b></div>
