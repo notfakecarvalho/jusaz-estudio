@@ -1,5 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { listarRoteiros } from "@/lib/queries";
+import { testarInstagram } from "@/app/actions";
 import type { Connection } from "@/lib/types";
 
 const TXT = {
@@ -55,12 +56,14 @@ export default async function Conexoes() {
 
         <section className="card stack">
           <Cabeca c={c("instagram")} titulo="Instagram" sub="Postagem dos Reels" icone={<><rect x="3.5" y="3.5" width="17" height="17" rx="5" /><circle cx="12" cy="12" r="4" /></>} />
-          <p className="muted">A conta precisa ser profissional e pública, e estar como Testador do Instagram no app da Meta. O token fica nos segredos do servidor, nunca nesta tela.</p>
+          <p className="muted">A conta precisa ser profissional e estar ligada ao app da Meta. O token fica nos segredos do servidor, nunca nesta tela.</p>
           <div>
             <div className="meta"><span>Conta</span><b>{c("instagram")?.label ?? "@jusaz_br"}</b></div>
             <div className="meta"><span>Segredos</span><b>IG_ACCESS_TOKEN e IG_USER_ID</b></div>
-            <div className="meta"><span>Renovação do token</span><b>A cada 60 dias</b></div>
+            <div className="meta"><span>Token</span><b>Usuário do sistema, sem vencimento</b></div>
           </div>
+          {typeof c("instagram")?.meta?.erro === "string" && <div className="toast t-warn" role="alert">{String(c("instagram")?.meta?.erro)}</div>}
+          <form action={testarInstagram}><button className="btn btn-s btn-sm">Testar conexão</button></form>
         </section>
 
         <section className="card stack">

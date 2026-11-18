@@ -6,7 +6,11 @@ const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 
-const IG = "https://graph.instagram.com/v23.0";
+// Token que começa com "EAA" vem do Login do Facebook (graph.facebook.com);
+// o do Login do Instagram (IGAA...) usa graph.instagram.com.
+const IG = (Deno.env.get("IG_ACCESS_TOKEN") ?? "").startsWith("EAA")
+  ? "https://graph.facebook.com/v23.0"
+  : "https://graph.instagram.com/v23.0";
 const AVISO = "Conteúdo informativo, não é aconselhamento jurídico. As histórias são ilustrativas.";
 const FUSO = "America/Maceio";
 
@@ -96,6 +100,27 @@ async function publicar(videoId: string) {
   return { ok: true, media_id: pj.id };
 }
 
+// Confere se o token e a conta do Instagram funcionam, sem postar nada.
+async function testarInstagram() {
+  const token = Deno.env.get("IG_ACCESS_TOKEN");
+  const uid = Deno.env.get("IG_USER_ID");
+  const grava = (status: string, label: string | null, meta: Record<string, unknown>) =>
+    admin.from("connections").update({ status, label, meta, checked_at: new Date().toISOString() }).eq("kind", "instagram");
+  if (!token || !uid) {
+    await grava("desconectado", null, { erro: "Faltam os segredos IG_ACCESS_TOKEN e IG_USER_ID no Supabase." });
+    return { erro: "Faltam os segredos." };
+  }
+  const r = await fetch(`${IG}/${uid}?fields=username&access_token=${token}`);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.username) {
+    const msg = `O Instagram recusou o token: ${j?.error?.message ?? r.status}`;
+    await grava("atencao", null, { erro: msg });
+    return { erro: msg };
+  }
+  await grava("conectado", `@${j.username}`, {});
+  return { ok: true, conta: j.username };
+}
+
 async function diaria() {
   const { data: cfg } = await admin.from("settings").select("*").eq("id", true).single();
   if (!cfg) return { erro: "Sem configurações." };
@@ -152,6 +177,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   try {
     if (body.acao === "diaria" && quem === "cron") return json(await diaria());
+    if (body.acao === "instagram") return json(await testarInstagram());
     if (body.acao === "postar" && quem === "admin" && typeof body.video_id === "string") return json(await publicar(body.video_id));
     return json({ erro: "Ação inválida." }, 400);
   } catch (e) {

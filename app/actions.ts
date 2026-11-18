@@ -111,3 +111,10 @@ export async function postarAgora(formData: FormData) {
   if (data?.erro) throw new Error(String(data.erro));
   revalidatePath("/", "layout");
 }
+
+export async function testarInstagram() {
+  const sb = await supabaseServer();
+  const { error } = await sb.functions.invoke("automacao", { body: { acao: "instagram" } });
+  if (error) throw new Error(error.message);
+  revalidatePath("/conexoes");
+}
