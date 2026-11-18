@@ -162,6 +162,20 @@ function volta(caminho: string, erro?: string, ok?: string): never {
   redirect(q.size ? `${caminho}${caminho.includes("?") ? "&" : "?"}${q}` : caminho);
 }
 
+// Troca uma chave (token do Instagram, chave do ElevenLabs...) pela tela Conexões.
+// O valor vai direto para o cofre do servidor e nunca volta para a tela.
+export async function salvarChave(formData: FormData) {
+  const nome = String(formData.get("nome") ?? "");
+  const valor = String(formData.get("valor") ?? "");
+  const sb = await supabaseServer();
+  const { data, error } = await sb.functions.invoke("segredos", { body: { acao: "salvar", nome, valor } });
+  revalidatePath("/", "layout");
+  if (error) volta("/conexoes", "Não consegui salvar agora. Tente de novo.");
+  if (data?.erro) volta("/conexoes", String(data.erro));
+  const extra = data?.conta ? ` Conta @${data.conta} conferida.` : "";
+  volta("/conexoes", data?.aviso ? String(data.aviso) : undefined, data?.aviso ? undefined : `Chave salva.${extra}`);
+}
+
 export async function atualizarInstagram() {
   const sb = await supabaseServer();
   const { data, error } = await sb.functions.invoke("instagram", { body: { acao: "ciclo", forcar: true } });

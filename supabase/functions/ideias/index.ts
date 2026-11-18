@@ -5,6 +5,12 @@ const URL_ = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
+
+// Chave salva pela tela Conexões (Vault) vale mais que o segredo do servidor.
+async function segredo(nome: string): Promise<string> {
+  const { data } = await admin.rpc("segredo_ler", { nome });
+  return (typeof data === "string" && data.trim()) || Deno.env.get(nome) || "";
+}
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
 
@@ -19,8 +25,8 @@ async function ehAdmin(req: Request) {
 }
 
 async function gerar() {
-  const chave = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!chave) return { erro: "Falta o segredo ANTHROPIC_API_KEY no Supabase (Edge Functions → Secrets)." };
+  const chave = await segredo("ANTHROPIC_API_KEY");
+  if (!chave) return { erro: "Falta a chave da Anthropic. Salve em Conexões." };
 
   const [{ data: roteiros }, { data: posts }, { data: ideias }] = await Promise.all([
     admin.from("scripts").select("title, keyword").order("position"),

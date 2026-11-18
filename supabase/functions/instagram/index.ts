@@ -7,10 +7,21 @@ const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 
-const TOKEN = Deno.env.get("IG_ACCESS_TOKEN") ?? "";
-const UID = Deno.env.get("IG_USER_ID") ?? "";
+// Chave salva pela tela Conexões (Vault) vale mais que o segredo do servidor.
+async function segredo(nome: string): Promise<string> {
+  const { data } = await admin.rpc("segredo_ler", { nome });
+  return (typeof data === "string" && data.trim()) || Deno.env.get(nome) || "";
+}
+
+let TOKEN = "";
+let UID = "";
+let G = "https://graph.instagram.com/v23.0";
 // Token EAA... vem do Login do Facebook; IGAA... do Login do Instagram.
-const G = TOKEN.startsWith("EAA") ? "https://graph.facebook.com/v23.0" : "https://graph.instagram.com/v23.0";
+async function carregarChaves() {
+  TOKEN = await segredo("IG_ACCESS_TOKEN");
+  UID = await segredo("IG_USER_ID");
+  G = TOKEN.startsWith("EAA") ? "https://graph.facebook.com/v23.0" : "https://graph.instagram.com/v23.0";
+}
 const MAX_ENVIOS_POR_CICLO = 5;
 
 const json = (b: unknown, status = 200) =>
@@ -68,8 +79,8 @@ async function marcarConexao(status: string, label: string | null, erro?: string
 // ---------- sincronização ----------
 async function sincronizar() {
   if (!TOKEN || !UID) {
-    await marcarConexao("desconectado", null, "Faltam os segredos IG_ACCESS_TOKEN e IG_USER_ID no Supabase.");
-    return { erro: "Faltam os segredos IG_ACCESS_TOKEN e IG_USER_ID." };
+    await marcarConexao("desconectado", null, "Faltam o token e o ID da conta do Instagram. Salve em Conexões.");
+    return { erro: "Faltam o token e o ID da conta. Salve em Conexões." };
   }
   const p = await ig(`${UID}?fields=username,name,profile_picture_url,followers_count,follows_count,media_count`);
   if (!p.ok) {
@@ -276,7 +287,7 @@ const hojeMaceio = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0
 // Lê as métricas de desempenho de cada post (alcance, visualizações, salvos, compartilhamentos,
 // tempo assistido). Posts novos atualizam a cada hora, os antigos uma vez por dia.
 async function insights(forcar = false) {
-  if (!TOKEN || !UID) return { erro: "Faltam os segredos IG_ACCESS_TOKEN e IG_USER_ID." };
+  if (!TOKEN || !UID) return { erro: "Faltam o token e o ID da conta. Salve em Conexões." };
   const agora = Date.now();
   const { data: posts } = await admin.from("ig_posts").select("id, product_type, posted_at, insights_at, insights_erro").order("posted_at", { ascending: false }).limit(30);
   const devidos = (posts ?? []).filter((x) => {
@@ -350,6 +361,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ erro: "Use POST." }, 405);
   const quem = await autorizar(req);
   if (!quem) return json({ erro: "Não autorizado." }, 401);
+  await carregarChaves();
   const b = await req.json().catch(() => ({}));
   try {
     if (b.acao === "ciclo") return json(await ciclo(b.forcar === true));

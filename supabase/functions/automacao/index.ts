@@ -6,11 +6,16 @@ const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 
+// Chave salva pela tela Conexões (Vault) vale mais que o segredo do servidor.
+async function segredo(nome: string): Promise<string> {
+  const { data } = await admin.rpc("segredo_ler", { nome });
+  return (typeof data === "string" && data.trim()) || Deno.env.get(nome) || "";
+}
+
 // Token que começa com "EAA" vem do Login do Facebook (graph.facebook.com);
 // o do Login do Instagram (IGAA...) usa graph.instagram.com.
-const IG = (Deno.env.get("IG_ACCESS_TOKEN") ?? "").startsWith("EAA")
-  ? "https://graph.facebook.com/v23.0"
-  : "https://graph.instagram.com/v23.0";
+const baseIg = (token: string) => (token.startsWith("EAA") ? "https://graph.facebook.com/v23.0" : "https://graph.instagram.com/v23.0");
+let IG = baseIg("");
 const AVISO = "Conteúdo informativo, não é aconselhamento jurídico. As histórias são ilustrativas.";
 const FUSO = "America/Maceio";
 
@@ -48,9 +53,10 @@ async function falha(videoId: string, erro: string) {
 }
 
 async function publicar(videoId: string) {
-  const token = Deno.env.get("IG_ACCESS_TOKEN");
-  const uid = Deno.env.get("IG_USER_ID");
-  if (!token || !uid) return { erro: "Instagram ainda não conectado: faltam os segredos IG_ACCESS_TOKEN e IG_USER_ID." };
+  const token = await segredo("IG_ACCESS_TOKEN");
+  const uid = await segredo("IG_USER_ID");
+  IG = baseIg(token);
+  if (!token || !uid) return { erro: "Instagram ainda não conectado: faltam o token e o ID da conta. Salve em Conexões." };
 
   const { data: v } = await admin.from("videos").select("*, scripts(*)").eq("id", videoId).maybeSingle();
   if (!v) return { erro: "Vídeo não encontrado." };
@@ -103,13 +109,14 @@ async function publicar(videoId: string) {
 
 // Confere se o token e a conta do Instagram funcionam, sem postar nada.
 async function testarInstagram() {
-  const token = Deno.env.get("IG_ACCESS_TOKEN");
-  const uid = Deno.env.get("IG_USER_ID");
+  const token = await segredo("IG_ACCESS_TOKEN");
+  const uid = await segredo("IG_USER_ID");
+  IG = baseIg(token);
   const grava = (status: string, label: string | null, meta: Record<string, unknown>) =>
     admin.from("connections").update({ status, label, meta, checked_at: new Date().toISOString() }).eq("kind", "instagram");
   if (!token || !uid) {
-    await grava("desconectado", null, { erro: "Faltam os segredos IG_ACCESS_TOKEN e IG_USER_ID no Supabase." });
-    return { erro: "Faltam os segredos." };
+    await grava("desconectado", null, { erro: "Faltam o token e o ID da conta do Instagram. Salve em Conexões." });
+    return { erro: "Faltam o token e o ID da conta." };
   }
   const r = await fetch(`${IG}/${uid}?fields=username&access_token=${token}`);
   const j = await r.json().catch(() => ({}));

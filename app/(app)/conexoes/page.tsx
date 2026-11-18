@@ -1,6 +1,7 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { listarRoteiros } from "@/lib/queries";
 import { atualizarTiktok, conectarTiktok, desconectarTiktok, testarInstagram } from "@/app/actions";
+import { FormChave } from "@/components/FormChave";
 import type { Connection } from "@/lib/types";
 
 const TXT = {
@@ -38,6 +39,13 @@ export default async function Conexoes({ searchParams }: { searchParams: Promise
   const c = (k: string) => data?.find((x) => x.kind === k);
   const roteiros = await listarRoteiros();
 
+  type Chave = { nome: string; origem: "painel" | "servidor" | null; atualizado_em: string | null };
+  const { data: st } = await sb.functions.invoke("segredos", { body: { acao: "status" } });
+  const chaves = (st?.chaves ?? []) as Chave[];
+  const k = (nome: string) => chaves.find((x) => x.nome === nome);
+  const igTipo = typeof st?.ig_tipo === "string" ? st.ig_tipo : null;
+  const igId = typeof st?.ig_user_id === "string" ? st.ig_user_id : null;
+
   return (
     <>
       <div className="head">
@@ -53,19 +61,25 @@ export default async function Conexoes({ searchParams }: { searchParams: Promise
           <Cabeca c={c("elevenlabs")} titulo="ElevenLabs" sub="Locução dos vídeos" icone={<path d="M5 9v6M9 6v12M13 4v16M17 8v8M21 10v4" />} />
           <div>
             <div className="meta"><span>Voz</span><b>{c("elevenlabs")?.label ?? "George"}</b></div>
-            <div className="meta"><span>Chave</span><b>Guardada no servidor (segredo ELEVENLABS_API_KEY)</b></div>
           </div>
+          <FormChave nome="ELEVENLABS_API_KEY" rotulo="Chave do ElevenLabs" origem={k("ELEVENLABS_API_KEY")?.origem ?? null} atualizadoEm={k("ELEVENLABS_API_KEY")?.atualizado_em}
+            ajuda="Crie em elevenlabs.io, em Developers, API Keys." />
         </section>
 
         <section className="card stack">
           <Cabeca c={c("instagram")} titulo="Instagram" sub="Postagem dos Reels" icone={<><rect x="3.5" y="3.5" width="17" height="17" rx="5" /><circle cx="12" cy="12" r="4" /></>} />
-          <p className="muted">A conta precisa ser profissional e estar ligada ao app da Meta. O token fica nos segredos do servidor, nunca nesta tela.</p>
+          <p className="muted">A conta precisa ser profissional e estar ligada ao app da Meta. O token é guardado criptografado no servidor e nunca volta para esta tela. Ao salvar, o estúdio testa o token no Instagram e só troca se ele funcionar.</p>
           <div>
             <div className="meta"><span>Conta</span><b>{c("instagram")?.label ?? "@jusaz_br"}</b></div>
-            <div className="meta"><span>Segredos</span><b>IG_ACCESS_TOKEN e IG_USER_ID</b></div>
-            <div className="meta"><span>Token</span><b>Usuário do sistema, sem vencimento</b></div>
+            <div className="meta"><span>Tipo de token</span><b>{igTipo ?? "Nenhum token salvo"}</b></div>
+            <div className="meta"><span>ID da conta</span><b>{igId ?? "Não informado"}</b></div>
           </div>
           {typeof c("instagram")?.meta?.erro === "string" && <div className="toast t-warn" role="alert">{String(c("instagram")?.meta?.erro)}</div>}
+          {typeof c("instagram")?.meta?.aviso === "string" && <div className="toast t-warn" role="status">{String(c("instagram")?.meta?.aviso)}</div>}
+          <FormChave nome="IG_ACCESS_TOKEN" rotulo="Token do Instagram" origem={k("IG_ACCESS_TOKEN")?.origem ?? null} atualizadoEm={k("IG_ACCESS_TOKEN")?.atualizado_em}
+            ajuda="Gere no Meta for Developers (usuário do sistema) com instagram_manage_insights, instagram_content_publish, comentários e mensagens." />
+          <FormChave nome="IG_USER_ID" rotulo="ID da conta do Instagram" secreto={false} valorAtual={igId} origem={k("IG_USER_ID")?.origem ?? null} atualizadoEm={k("IG_USER_ID")?.atualizado_em}
+            ajuda="Número da conta profissional, não o @." />
           <form action={testarInstagram}><button className="btn btn-s btn-sm">Testar conexão</button></form>
         </section>
 
@@ -74,10 +88,11 @@ export default async function Conexoes({ searchParams }: { searchParams: Promise
           <p className="muted">O estúdio manda o vídeo pronto para a caixa de entrada do seu TikTok no horário da postagem. Você abre o app, cola a legenda e toca em publicar. As métricas aparecem na aba Insights.</p>
           <div>
             <div className="meta"><span>Conta</span><b>{c("tiktok")?.status === "conectado" ? (c("tiktok")?.label ?? "Conectada") : "Nenhuma conta conectada"}</b></div>
-            <div className="meta"><span>Segredo</span><b>TIKTOK_CLIENT_SECRET (guardado no Supabase)</b></div>
             <div className="meta"><span>Permissões</span><b>Perfil, estatísticas, vídeos e envio de rascunho</b></div>
           </div>
           {typeof c("tiktok")?.meta?.erro === "string" && <div className="toast t-warn" role="alert">{String(c("tiktok")?.meta?.erro)}</div>}
+          <FormChave nome="TIKTOK_CLIENT_SECRET" rotulo="Client Secret do TikTok" origem={k("TIKTOK_CLIENT_SECRET")?.origem ?? null} atualizadoEm={k("TIKTOK_CLIENT_SECRET")?.atualizado_em}
+            ajuda="Está no TikTok for Developers, no seu app. Depois de trocar, clique em Conectar de novo." />
           <div className="row wrap">
             <form action={conectarTiktok}><button className="btn btn-p btn-sm">{c("tiktok")?.status === "conectado" ? "Conectar de novo" : "Conectar TikTok"}</button></form>
             {c("tiktok")?.status === "conectado" && (
@@ -97,6 +112,19 @@ export default async function Conexoes({ searchParams }: { searchParams: Promise
               <div key={r.id} className="meta"><span>{r.title}</span><b>{r.keyword}</b></div>
             ))}
           </div>
+        </section>
+
+        <section className="card stack">
+          <div className="row" style={{ gap: 14 }}>
+            <Icone><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z" /></Icone>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ fontSize: 19 }}>Anthropic</h3>
+              <span className="muted" style={{ fontSize: 13 }}>Opcional: botão Gerar ideias</span>
+            </div>
+            <span className={`badge ${k("ANTHROPIC_API_KEY")?.origem ? "b-ok" : "b-wait"}`}>{k("ANTHROPIC_API_KEY")?.origem ? "Chave salva" : "Sem chave"}</span>
+          </div>
+          <FormChave nome="ANTHROPIC_API_KEY" rotulo="Chave da Anthropic" origem={k("ANTHROPIC_API_KEY")?.origem ?? null} atualizadoEm={k("ANTHROPIC_API_KEY")?.atualizado_em}
+            ajuda="Crie em console.anthropic.com, em API Keys." />
         </section>
 
         <section className="card stack">

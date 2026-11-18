@@ -7,9 +7,15 @@ const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 
+// Chave salva pela tela Conexões (Vault) vale mais que o segredo do servidor.
+async function segredo(nome: string): Promise<string> {
+  const { data } = await admin.rpc("segredo_ler", { nome });
+  return (typeof data === "string" && data.trim()) || Deno.env.get(nome) || "";
+}
+
 // A chave do cliente é pública (aparece na URL de login). O segredo só vem do cofre do Supabase.
 const KEY = Deno.env.get("TIKTOK_CLIENT_KEY") ?? "sbaw9mgqdl834q0wbe";
-const SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET") ?? "";
+let SECRET = "";
 const REDIRECT = Deno.env.get("TIKTOK_REDIRECT_URI") ?? "https://jusaz-estudio.vercel.app/meta/tiktok";
 const ESCOPOS = Deno.env.get("TIKTOK_SCOPES") ?? "user.info.basic,user.info.stats,video.list,video.upload";
 const API = "https://open.tiktokapis.com";
@@ -107,7 +113,7 @@ async function urlLogin() {
 }
 
 async function trocar(code: string, state: string) {
-  if (!SECRET) return { erro: "Falta salvar o segredo TIKTOK_CLIENT_SECRET no Supabase (Edge Functions, Secrets)." };
+  if (!SECRET) return { erro: "Falta o Client Secret do TikTok. Salve em Conexões." };
   const { data: st } = await admin.from("tiktok_login_state").select("state, created_at").eq("state", state).maybeSingle();
   if (!st || Date.now() - new Date(st.created_at).getTime() > 3600e3) return { erro: "O login expirou. Clique em Conectar TikTok de novo." };
   await admin.from("tiktok_login_state").delete().eq("state", state);
@@ -331,6 +337,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ erro: "Use POST." }, 405);
   const quem = await autorizar(req);
   if (!quem) return json({ erro: "Não autorizado." }, 401);
+  SECRET = await segredo("TIKTOK_CLIENT_SECRET");
   const b = await req.json().catch(() => ({}));
   try {
     if (b.acao === "ciclo") return json(await ciclo());

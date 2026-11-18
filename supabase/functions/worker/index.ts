@@ -5,6 +5,12 @@ const URL_ = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 
+// Chave salva pela tela Conexões (Vault) vale mais que o segredo do servidor.
+async function segredo(nome: string): Promise<string> {
+  const { data } = await admin.rpc("segredo_ler", { nome });
+  return (typeof data === "string" && data.trim()) || Deno.env.get(nome) || "";
+}
+
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
 
@@ -63,8 +69,8 @@ function emPalavras(al: { characters: string[]; character_start_times_seconds: n
 }
 
 async function voz(jobId: string, texto: string, vozId: string) {
-  const key = Deno.env.get("ELEVENLABS_API_KEY");
-  if (!key) return { erro: "Falta o segredo ELEVENLABS_API_KEY." };
+  const key = await segredo("ELEVENLABS_API_KEY");
+  if (!key) return { erro: "Falta a chave do ElevenLabs. Salve em Conexões." };
   const { data: job } = await admin.from("render_jobs").select("video_id").eq("id", jobId).single();
   const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vozId}/with-timestamps?output_format=mp3_44100_128`, {
     method: "POST",
