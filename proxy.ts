@@ -21,7 +21,8 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const entrou = !!data?.claims;
   const noLogin = request.nextUrl.pathname.startsWith("/login");
-  if (!entrou && !noLogin) {
+  const publica = request.nextUrl.pathname.startsWith("/meta/");
+  if (!entrou && !noLogin && !publica) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
