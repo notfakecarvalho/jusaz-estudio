@@ -37,7 +37,7 @@ async function pegar(worker: string) {
     job,
     video: { id: video.id, scheduled_for: video.scheduled_for, plataforma: video.platform },
     roteiro: { slug: s.slug, titulo: s.title, palavra: s.keyword, gancho: s.hook },
-    texto: `${s.story} ${s.closing_lead} ${FECHO} ${video.platform === "tiktok" ? "Me chama no direct e manda" : "Comenta"} ${s.keyword} que eu te mando o link.`,
+    texto: `${s.story} ${s.closing_lead} ${FECHO} ${video.platform === "tiktok" ? "Entra no link da bio, ou acessa jusaz ponto com, e fala com os advogados." : `Comenta ${s.keyword} que eu te mando o link.`}`,
     config: { voz_id: cfg.voice_id, velocidade: cfg.voice_speed, musica_db: cfg.music_db },
   };
 }

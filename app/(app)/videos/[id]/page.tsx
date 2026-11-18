@@ -6,7 +6,7 @@ import { Copiar } from "@/components/Copiar";
 import { enviarTiktok, gerarVideo, postarAgora, reagendar, salvarLegenda } from "@/app/actions";
 import { ROTULO_VIDEO, classeBadgeVideo, dataCurta, horaDoSlot } from "@/lib/format";
 import { configuracoes, ultimoJob, urlPublica } from "@/lib/queries";
-import { AVISO_OAB, ROTULO_PLATAFORMA, ctaFalado, legendaPadrao } from "@/lib/types";
+import { AVISO_OAB, ROTULO_PLATAFORMA, legendaPadrao } from "@/lib/types";
 import type { Video } from "@/lib/types";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -133,7 +133,7 @@ export default async function VideoPagina({ params, searchParams }: { params: Pr
                 <>
                   <div className="meta"><span>Conta</span><b>TikTok conectado em Conexões</b></div>
                   <div className="meta"><span>Tipo</span><b>Rascunho na caixa de entrada</b></div>
-                  <div className="meta"><span>Funil</span><b>{ctaFalado(s.keyword, "tiktok").replace(" que eu te mando o link.", "")}</b></div>
+                  <div className="meta"><span>Funil</span><b>Link da bio · jusaz.com</b></div>
                 </>
               ) : (
                 <>

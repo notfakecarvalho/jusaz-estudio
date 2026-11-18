@@ -124,7 +124,7 @@ export default async function Hoje() {
                 <div className="meta"><span>Vídeo</span><b><span className={`badge ${classeBadgeVideo(versaoTiktok.status)}`}>{ROTULO_VIDEO[versaoTiktok.status]}</span></b></div>
                 <div className="meta"><span>Rascunho no TikTok</span><b>{versaoTiktok.tiktok_status === "postado" ? "Publicado" : versaoTiktok.tiktok_status === "enviado" ? "Na sua caixa de entrada" : versaoTiktok.tiktok_status === "erro" ? "Falhou" : "Ainda não enviado"}</b></div>
               </div>
-              <p className="muted" style={{ fontSize: 13 }}>Mesma história, mas a última frase chama a pessoa no direct em vez de pedir comentário.</p>
+              <p className="muted" style={{ fontSize: 13 }}>Mesma história, mas a última frase manda a pessoa pro link da bio e pro jusaz.com em vez de pedir comentário.</p>
               <div><Link className="btn btn-s btn-sm" href={`/videos/${versaoTiktok.id}`}>Abrir versão TikTok</Link></div>
             </section>
           )}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { salvarRoteiro, marcarConferido } from "@/app/actions";
 import { listarRoteiros } from "@/lib/queries";
 import { ROTULO_ROTEIRO, palavras, segundosEstimados } from "@/lib/format";
-import { CTA_ANTES, CTA_DEPOIS, FECHO_BASE, textoFalado } from "@/lib/types";
+import { FECHO_BASE, ctaFalado, textoFalado } from "@/lib/types";
 
 const cls = { pronto: "b-ok", rascunho: "b-wait", conferir_fato: "b-warn" } as const;
 
@@ -67,14 +67,12 @@ export default async function Roteiros({ searchParams }: { searchParams: Promise
               <div className="fld">
                 <label>Fecho padrão do JusAz</label>
                 <div className="fecho">
-                  <b>Instagram</b> · <mark>{atual.closing_lead}</mark> {FECHO_BASE} {CTA_ANTES.instagram} <mark>{atual.keyword}</mark>
-                  {CTA_DEPOIS}
+                  <b>Instagram</b> · <mark>{atual.closing_lead}</mark> {FECHO_BASE} <mark>{ctaFalado(atual.keyword, "instagram")}</mark>
                 </div>
                 <div className="fecho">
-                  <b>TikTok</b> · <mark>{atual.closing_lead}</mark> {FECHO_BASE} {CTA_ANTES.tiktok} <mark>{atual.keyword}</mark>
-                  {CTA_DEPOIS}
+                  <b>TikTok</b> · <mark>{atual.closing_lead}</mark> {FECHO_BASE} <mark>{ctaFalado(atual.keyword, "tiktok")}</mark>
                 </div>
-                <small>Cada roteiro vira dois vídeos com a mesma história. Só a última frase muda: no Instagram a pessoa comenta, no TikTok ela chama no direct.</small>
+                <small>Cada roteiro vira dois vídeos com a mesma história. Só a última frase muda: no Instagram a pessoa comenta, no TikTok ela vai pro link da bio e pro site.</small>
               </div>
               <div className="fld">
                 <label htmlFor="caption">Legenda</label>

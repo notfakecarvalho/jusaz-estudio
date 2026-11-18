@@ -77,20 +77,19 @@ export type Connection = {
 };
 
 // Fecho padrão do JusAz: igual em todos os vídeos. Só a ligação com o caso e a palavra mudam,
-// e a última frase muda por plataforma (no Instagram comenta; no TikTok chama no direct).
+// e a última frase muda por plataforma (no Instagram comenta; no TikTok manda pro link da bio e pro site).
 export const FECHO_BASE =
   "o JusAz te ajuda a descobrir seus direitos: você faz sua pergunta de graça e advogados verificados pela OAB, de todo o Brasil, respondem.";
 
-export const CTA_ANTES: Record<Plataforma, string> = {
-  instagram: "Comenta",
-  tiktok: "Me chama no direct e manda",
-};
-export const CTA_DEPOIS = " que eu te mando o link.";
+// Falado no TikTok: "ponto com" por extenso, pra voz não soletrar o endereço.
+export const CTA_TIKTOK_FALADO = "Entra no link da bio, ou acessa jusaz ponto com, e fala com os advogados.";
+// Escrito na legenda do TikTok.
+export const CTA_TIKTOK_LEGENDA = "Link da bio ou jusaz.com pra falar com os advogados.";
 
 export const ROTULO_PLATAFORMA: Record<Plataforma, string> = { instagram: "Instagram", tiktok: "TikTok" };
 
 export function ctaFalado(keyword: string, plataforma: Plataforma = "instagram") {
-  return `${CTA_ANTES[plataforma]} ${keyword}${CTA_DEPOIS}`;
+  return plataforma === "tiktok" ? CTA_TIKTOK_FALADO : `Comenta ${keyword} que eu te mando o link.`;
 }
 
 export function fechoPadrao(keyword: string, plataforma: Plataforma = "instagram") {
@@ -104,7 +103,7 @@ export function textoFalado(s: Pick<Script, "story" | "closing_lead" | "keyword"
 // Legenda de partida da versão: a do roteiro, com o convite da plataforma.
 export function legendaPadrao(s: Pick<Script, "caption" | "keyword">, plataforma: Plataforma) {
   if (plataforma !== "tiktok") return s.caption;
-  return s.caption.replace(`${CTA_ANTES.instagram} ${s.keyword}`, `${CTA_ANTES.tiktok} ${s.keyword}`);
+  return s.caption.replace(`Comenta ${s.keyword} que eu te mando o link.`, CTA_TIKTOK_LEGENDA);
 }
 
 export const AVISO_OAB =
