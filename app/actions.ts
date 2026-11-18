@@ -112,6 +112,34 @@ export async function postarAgora(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+// Vídeo renderizado fora da plataforma (ex.: pelo Claude): o arquivo já foi enviado ao Storage pelo navegador;
+// aqui ele vira o vídeo oficial do dia e entra na agenda (posta na data e hora combinadas).
+export async function anexarVideo(videoId: string, caminho: string, duracao: number | null) {
+  const sb = await supabaseServer();
+  if (!/^[0-9a-f-]{36}\/reel-\d+\.mp4$/.test(caminho) || !caminho.startsWith(`${videoId}/`)) throw new Error("Caminho de arquivo inválido.");
+  const { data: v } = await sb.from("videos").select("status").eq("id", videoId).maybeSingle();
+  if (!v) throw new Error("Vídeo não encontrado.");
+  if (v.status === "postado") throw new Error("Este vídeo já foi postado.");
+  const { error } = await sb
+    .from("videos")
+    .update({
+      final_path: caminho,
+      status: "pronto",
+      progress: 100,
+      duration_s: duracao && duracao > 0 && duracao < 600 ? Math.round(duracao * 10) / 10 : null,
+      ig_container_id: null,
+      error: null,
+    })
+    .eq("id", videoId);
+  if (error) throw new Error(error.message);
+  await sb
+    .from("render_jobs")
+    .update({ status: "done", finished_at: new Date().toISOString(), log: "Vídeo enviado direto pelo estúdio." })
+    .eq("video_id", videoId)
+    .in("status", ["queued", "running"]);
+  revalidatePath("/", "layout");
+}
+
 export async function testarInstagram() {
   const sb = await supabaseServer();
   const { error } = await sb.functions.invoke("automacao", { body: { acao: "instagram" } });

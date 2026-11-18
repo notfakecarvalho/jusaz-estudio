@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pipeline } from "@/components/Pipeline";
+import { EnviarVideo } from "@/components/EnviarVideo";
 import { gerarVideo, postarAgora, reagendar, salvarLegenda } from "@/app/actions";
 import { ROTULO_VIDEO, classeBadgeVideo, dataCurta } from "@/lib/format";
 import { configuracoes, ultimoJob, urlPublica } from "@/lib/queries";
@@ -47,6 +48,13 @@ export default async function VideoPagina({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="stack">
+          {video.status !== "postado" && (
+            <section className="card stack">
+              <h3 style={{ fontSize: 19 }}>Vídeo renderizado</h3>
+              <EnviarVideo videoId={video.id} temVideo={!!video.final_path} quando={`${dataCurta(video.scheduled_for)}, ${regras.post_hour.slice(0, 5)}`} />
+            </section>
+          )}
+
           <section className="card stack">
             <h3 style={{ fontSize: 19 }}>Etapas</h3>
             <Pipeline video={video} job={job} quando={`${dataCurta(video.scheduled_for)}, ${regras.post_hour.slice(0, 5)}`} />
