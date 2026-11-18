@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { FonteInsights } from "@/components/FonteInsights";
+import { InsightsTiktok } from "./tiktok";
 import { ColunasTempo, LinhaSimples, RankingBarras, type Item } from "@/components/charts";
 import { atualizarInsights } from "@/app/actions";
 import { haQuanto, numero, ROTULO_MIDIA } from "@/lib/format";
@@ -13,8 +15,9 @@ type VideoLigado = { id: string; duration_s: number | null; scripts: { title: st
 const soma = (xs: (number | null)[]) => xs.reduce<number>((n, x) => n + (x ?? 0), 0);
 const temAlgum = (xs: (number | null)[]) => xs.some((x) => x != null);
 
-export default async function Insights({ searchParams }: { searchParams: Promise<{ m?: string; t?: string; erro?: string; ok?: string }> }) {
-  const { m, t, erro, ok } = await searchParams;
+export default async function Insights({ searchParams }: { searchParams: Promise<{ m?: string; t?: string; r?: string; erro?: string; ok?: string }> }) {
+  const { m, t, r, erro, ok } = await searchParams;
+  if (r === "tiktok") return <InsightsTiktok m={m} erro={erro} ok={ok} />;
   const sb = await supabaseServer();
   const [conta, posts, retratos, { data: videos }] = await Promise.all([
     contaInstagram(),
@@ -104,9 +107,12 @@ export default async function Insights({ searchParams }: { searchParams: Promise
           <span className="lbl">Métricas lidas {haQuanto(posts.map((p) => p.insights_at).filter(Boolean).sort().pop() ?? conta?.synced_at ?? null)}</span>
           <h1>Insights</h1>
         </div>
-        <form action={atualizarInsights}>
-          <button className="btn btn-s">Atualizar agora</button>
-        </form>
+        <div className="row wrap">
+          <FonteInsights atual="instagram" />
+          <form action={atualizarInsights}>
+            <button className="btn btn-s">Atualizar agora</button>
+          </form>
+        </div>
       </div>
 
       {ok && <div className="toast t-ok" role="status">{ok}</div>}

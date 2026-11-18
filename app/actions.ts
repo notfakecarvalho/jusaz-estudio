@@ -275,3 +275,40 @@ export async function decidirIdeia(formData: FormData) {
   await sb.from("ideas").update({ status: decisao === "descartar" ? "descartada" : "nova" }).eq("id", id);
   revalidatePath("/ideias");
 }
+
+// ---------- TikTok ----------
+export async function conectarTiktok() {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.functions.invoke("tiktok", { body: { acao: "url" } });
+  if (error || !data?.url) volta("/conexoes", error?.message ?? data?.erro ?? "Não consegui abrir o login do TikTok.");
+  redirect(String(data.url));
+}
+
+export async function desconectarTiktok() {
+  const sb = await supabaseServer();
+  const { error } = await sb.functions.invoke("tiktok", { body: { acao: "desconectar" } });
+  revalidatePath("/", "layout");
+  if (error) volta("/conexoes", error.message);
+  volta("/conexoes", undefined, "TikTok desconectado.");
+}
+
+export async function atualizarTiktok() {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.functions.invoke("tiktok", { body: { acao: "sincronizar" } });
+  revalidatePath("/", "layout");
+  const primeiro = (data?.metricas as { erro?: string; aviso?: string }[] | undefined)?.[0];
+  const erro = error?.message ?? primeiro?.erro;
+  if (erro) volta("/insights?r=tiktok", String(erro));
+  if (primeiro?.aviso) volta("/insights?r=tiktok", primeiro.aviso);
+  volta("/insights?r=tiktok", undefined, "Métricas do TikTok atualizadas.");
+}
+
+export async function enviarTiktok(formData: FormData) {
+  const id = String(formData.get("video_id"));
+  const sb = await supabaseServer();
+  const { data, error } = await sb.functions.invoke("tiktok", { body: { acao: "enviar", video_id: id } });
+  revalidatePath(`/videos/${id}`);
+  const erro = error?.message ?? data?.erro;
+  if (erro) volta(`/videos/${id}`, String(erro));
+  volta(`/videos/${id}`, undefined, "Rascunho enviado. Abra o TikTok, toque na notificação e publique.");
+}

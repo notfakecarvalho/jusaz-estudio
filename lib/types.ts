@@ -32,6 +32,10 @@ export type Video = {
   ig_media_id: string | null;
   posted_at: string | null;
   error: string | null;
+  tiktok_status: "enviado" | "postado" | "erro" | null;
+  tiktok_publish_id: string | null;
+  tiktok_sent_at: string | null;
+  tiktok_error: string | null;
   scripts?: Script | null;
 };
 
@@ -60,7 +64,7 @@ export type Settings = {
 };
 
 export type Connection = {
-  kind: "elevenlabs" | "instagram" | "manychat" | "supabase" | "render_worker";
+  kind: "elevenlabs" | "instagram" | "manychat" | "supabase" | "render_worker" | "tiktok";
   status: "conectado" | "desconectado" | "atencao";
   label: string | null;
   meta: Record<string, unknown>;
@@ -115,3 +119,32 @@ export type Idea = {
   id: string; title: string; hook: string | null; angle: string | null; keyword: string | null;
   source: string; status: "nova" | "aprovada" | "descartada"; created_at: string;
 };
+
+export type TiktokConta = {
+  open_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  followers: number | null;
+  following: number | null;
+  likes: number | null;
+  video_count: number | null;
+  principal: boolean;
+  synced_at: string | null;
+};
+
+export type TiktokVideo = {
+  id: string;
+  title: string | null;
+  cover_url: string | null;
+  share_url: string | null;
+  duration_s: number | null;
+  posted_at: string | null;
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  video_id: string | null;
+  synced_at: string | null;
+};
+
+export type TiktokDia = { day: string; followers: number | null; likes: number | null; video_count: number | null };

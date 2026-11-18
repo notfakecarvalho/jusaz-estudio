@@ -2,15 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pipeline } from "@/components/Pipeline";
 import { EnviarVideo } from "@/components/EnviarVideo";
-import { gerarVideo, postarAgora, reagendar, salvarLegenda } from "@/app/actions";
+import { Copiar } from "@/components/Copiar";
+import { enviarTiktok, gerarVideo, postarAgora, reagendar, salvarLegenda } from "@/app/actions";
 import { ROTULO_VIDEO, classeBadgeVideo, dataCurta } from "@/lib/format";
 import { configuracoes, ultimoJob, urlPublica } from "@/lib/queries";
 import { AVISO_OAB } from "@/lib/types";
 import type { Video } from "@/lib/types";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export default async function VideoPagina({ params }: { params: Promise<{ id: string }> }) {
+export default async function VideoPagina({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; erro?: string }> }) {
   const { id } = await params;
+  const { ok, erro } = await searchParams;
   const sb = await supabaseServer();
   const { data: video } = await sb.from("videos").select("*, scripts(*)").eq("id", id).maybeSingle<Video>();
   if (!video || !video.scripts) notFound();
@@ -18,6 +20,10 @@ export default async function VideoPagina({ params }: { params: Promise<{ id: st
   const [job, regras] = await Promise.all([ultimoJob(video.id), configuracoes()]);
   const ativo = job && (job.status === "queued" || job.status === "running");
   const url = urlPublica(video.final_path);
+  const legendaTiktok = [video.caption ?? s.caption, s.hashtags.join(" ")].join("\n\n");
+  const { data: tiktokLigado } = await sb.from("connections").select("status").eq("kind", "tiktok").maybeSingle<{ status: string }>();
+  const tiktokOn = tiktokLigado?.status === "conectado";
+  const ROT_TIKTOK = { enviado: "Rascunho na sua caixa de entrada", postado: "Publicado no TikTok", erro: "Falhou" } as const;
 
   return (
     <>
@@ -38,6 +44,9 @@ export default async function VideoPagina({ params }: { params: Promise<{ id: st
           </form>
         </div>
       </div>
+
+      {ok && <div className="toast t-ok" role="status">{ok}</div>}
+      {erro && <div className="toast t-warn" role="alert">{erro}</div>}
 
       <div className="grid-main" style={{ gridTemplateColumns: "240px minmax(0,1fr)" }}>
         <div className="stack" style={{ alignItems: "center" }}>
@@ -79,6 +88,26 @@ export default async function VideoPagina({ params }: { params: Promise<{ id: st
               <p className="muted" style={{ fontSize: 12 }}>{AVISO_OAB}</p>
               <div><button className="btn btn-s btn-sm">Salvar legenda</button></div>
             </form>
+          </section>
+
+          <section className="card stack">
+            <h3 style={{ fontSize: 19 }}>TikTok</h3>
+            <div>
+              <div className="meta"><span>Situação</span><b>{video.tiktok_status ? ROT_TIKTOK[video.tiktok_status] : tiktokOn ? "Ainda não enviado" : "TikTok não conectado"}</b></div>
+              <div className="meta"><span>Enviado em</span><b>{video.tiktok_sent_at ? new Date(video.tiktok_sent_at).toLocaleString("pt-BR", { timeZone: "America/Maceio" }) : "—"}</b></div>
+            </div>
+            {video.tiktok_error && <div className="toast t-warn" role="alert">{video.tiktok_error}</div>}
+            {video.tiktok_status === "enviado" && <p className="muted" style={{ fontSize: 13 }}>Abra o TikTok, toque na notificação do rascunho, cole a legenda e publique. O TikTok só deixa publicar por lá, nesta conta de teste.</p>}
+            <textarea className="inp" readOnly value={legendaTiktok} aria-label="Legenda para o TikTok" />
+            <div className="row wrap">
+              <Copiar texto={legendaTiktok} />
+              {tiktokOn && !!video.final_path && video.tiktok_status !== "enviado" && video.tiktok_status !== "postado" && (
+                <form action={enviarTiktok}>
+                  <input type="hidden" name="video_id" value={video.id} />
+                  <button className="btn btn-p btn-sm">{video.tiktok_status === "erro" ? "Enviar de novo ao TikTok" : "Enviar ao TikTok agora"}</button>
+                </form>
+              )}
+            </div>
           </section>
 
           <section className="card stack">

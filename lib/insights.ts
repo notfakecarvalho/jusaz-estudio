@@ -1,4 +1,4 @@
-import type { IgPost } from "@/lib/types";
+import type { IgPost, TiktokVideo } from "@/lib/types";
 
 export type MetricaId = "views" | "reach" | "engaj" | "likes" | "comments" | "saves" | "shares";
 
@@ -50,4 +50,25 @@ export function tetoRedondo(max: number) {
   const f = max / exp;
   const base = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
   return base * exp;
+}
+
+// ---------- TikTok ----------
+export type MetricaTk = "views" | "engaj" | "likes" | "comments" | "shares";
+
+export const METRICAS_TK: { id: MetricaTk; rotulo: string; dica: string }[] = [
+  { id: "views", rotulo: "Visualizações", dica: "Quantas vezes o vídeo foi exibido" },
+  { id: "engaj", rotulo: "Interações", dica: "Curtidas, comentários e compartilhamentos" },
+  { id: "likes", rotulo: "Curtidas", dica: "Curtidas" },
+  { id: "comments", rotulo: "Comentários", dica: "Comentários" },
+  { id: "shares", rotulo: "Compartilhamentos", dica: "Compartilhamentos" },
+];
+
+export function valorTk(v: TiktokVideo, m: MetricaTk): number | null {
+  switch (m) {
+    case "views": return v.views;
+    case "likes": return v.likes;
+    case "comments": return v.comments;
+    case "shares": return v.shares;
+    case "engaj": return v.likes == null && v.comments == null && v.shares == null ? null : (v.likes ?? 0) + (v.comments ?? 0) + (v.shares ?? 0);
+  }
 }

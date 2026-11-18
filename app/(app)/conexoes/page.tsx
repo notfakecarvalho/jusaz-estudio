@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { listarRoteiros } from "@/lib/queries";
-import { testarInstagram } from "@/app/actions";
+import { atualizarTiktok, conectarTiktok, desconectarTiktok, testarInstagram } from "@/app/actions";
 import type { Connection } from "@/lib/types";
 
 const TXT = {
@@ -31,7 +31,8 @@ function Cabeca({ icone, titulo, sub, c }: { icone: React.ReactNode; titulo: str
   );
 }
 
-export default async function Conexoes() {
+export default async function Conexoes({ searchParams }: { searchParams: Promise<{ ok?: string; erro?: string }> }) {
+  const { ok, erro } = await searchParams;
   const sb = await supabaseServer();
   const { data } = await sb.from("connections").select("*").returns<Connection[]>();
   const c = (k: string) => data?.find((x) => x.kind === k);
@@ -45,6 +46,8 @@ export default async function Conexoes() {
           <h1>Conexões</h1>
         </div>
       </div>
+      {ok && <div className="toast t-ok" role="status">{ok}</div>}
+      {erro && <div className="toast t-warn" role="alert">{erro}</div>}
       <div className="grid2">
         <section className="card stack">
           <Cabeca c={c("elevenlabs")} titulo="ElevenLabs" sub="Locução dos vídeos" icone={<path d="M5 9v6M9 6v12M13 4v16M17 8v8M21 10v4" />} />
@@ -64,6 +67,26 @@ export default async function Conexoes() {
           </div>
           {typeof c("instagram")?.meta?.erro === "string" && <div className="toast t-warn" role="alert">{String(c("instagram")?.meta?.erro)}</div>}
           <form action={testarInstagram}><button className="btn btn-s btn-sm">Testar conexão</button></form>
+        </section>
+
+        <section className="card stack">
+          <Cabeca c={c("tiktok")} titulo="TikTok" sub="Métricas e rascunho diário do vídeo" icone={<path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5M14 4c.4 2.4 2 4 4.5 4.2" />} />
+          <p className="muted">O estúdio manda o vídeo pronto para a caixa de entrada do seu TikTok no horário da postagem. Você abre o app, cola a legenda e toca em publicar. As métricas aparecem na aba Insights.</p>
+          <div>
+            <div className="meta"><span>Conta</span><b>{c("tiktok")?.status === "conectado" ? (c("tiktok")?.label ?? "Conectada") : "Nenhuma conta conectada"}</b></div>
+            <div className="meta"><span>Segredo</span><b>TIKTOK_CLIENT_SECRET (guardado no Supabase)</b></div>
+            <div className="meta"><span>Permissões</span><b>Perfil, estatísticas, vídeos e envio de rascunho</b></div>
+          </div>
+          {typeof c("tiktok")?.meta?.erro === "string" && <div className="toast t-warn" role="alert">{String(c("tiktok")?.meta?.erro)}</div>}
+          <div className="row wrap">
+            <form action={conectarTiktok}><button className="btn btn-p btn-sm">{c("tiktok")?.status === "conectado" ? "Conectar de novo" : "Conectar TikTok"}</button></form>
+            {c("tiktok")?.status === "conectado" && (
+              <>
+                <form action={atualizarTiktok}><button className="btn btn-s btn-sm">Atualizar agora</button></form>
+                <form action={desconectarTiktok}><button className="btn btn-s btn-sm">Desconectar</button></form>
+              </>
+            )}
+          </div>
         </section>
 
         <section className="card stack">
