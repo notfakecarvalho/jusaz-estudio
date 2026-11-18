@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
-import type { IgAccount, IgComment, IgPost, RenderJob, Script, Settings, Video } from "@/lib/types";
+import type { IgAccount, IgComment, IgDia, IgPost, RenderJob, Script, Settings, Video } from "@/lib/types";
 
 export async function listarVideos(desde?: string) {
   const sb = await supabaseServer();
@@ -60,4 +60,10 @@ export async function comentariosRecentes(limite = 25) {
     .limit(limite)
     .returns<IgComment[]>();
   return data ?? [];
+}
+
+export async function retratosConta(dias = 60) {
+  const sb = await supabaseServer();
+  const { data } = await sb.from("ig_account_daily").select("*").order("day", { ascending: false }).limit(dias).returns<IgDia[]>();
+  return (data ?? []).reverse();
 }

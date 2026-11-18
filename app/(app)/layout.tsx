@@ -5,11 +5,10 @@ import type { Connection } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const sb = await supabaseServer();
-  const { data: worker } = await sb.from("connections").select("*").eq("kind", "render_worker").maybeSingle<Connection>();
-  const { count: fila } = await sb
-    .from("render_jobs")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["queued", "running"]);
+  const [{ data: worker }, { count: fila }] = await Promise.all([
+    sb.from("connections").select("*").eq("kind", "render_worker").maybeSingle<Connection>(),
+    sb.from("render_jobs").select("id", { count: "exact", head: true }).in("status", ["queued", "running"]),
+  ]);
   // Online = o worker deu sinal de vida nos últimos 5 minutos.
   const online =
     worker?.status === "conectado" && !!worker.checked_at && Date.now() - new Date(worker.checked_at).getTime() < 5 * 60 * 1000;

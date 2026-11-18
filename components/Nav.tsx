@@ -31,6 +31,7 @@ const ICONS: Record<string, React.ReactNode> = {
       <circle cx="17" cy="7" r="0.6" />
     </>
   ),
+  insights: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
   funil: <path d="M3 4h18l-7 9v6l-4 2v-8z" />,
   mensagens: <path d="M4 5h16v11H9l-5 4z" />,
   ideias: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" />,
@@ -42,6 +43,7 @@ const ITENS = [
   { href: "/fila", key: "fila", label: "Fila" },
   { href: "/videos", key: "videos", label: "Vídeos" },
   { href: "/instagram", key: "instagram", label: "Instagram" },
+  { href: "/insights", key: "insights", label: "Insights" },
   { href: "/funil", key: "funil", label: "Funil" },
   { href: "/mensagens", key: "mensagens", label: "Mensagens" },
   { href: "/ideias", key: "ideias", label: "Ideias" },

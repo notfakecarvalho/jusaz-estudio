@@ -90,6 +90,10 @@ async function sincronizar() {
       synced_at: new Date().toISOString(),
     })
     .eq("id", true);
+  await admin.from("ig_account_daily").upsert(
+    { day: hojeMaceio(), followers: p.data.followers_count ?? null, follows: p.data.follows_count ?? null, media_count: p.data.media_count ?? null },
+    { onConflict: "day" },
+  );
   await marcarConexao("conectado", `@${p.data.username}`);
 
   const m = await ig(
@@ -267,12 +271,79 @@ async function simular(texto: string, postId: string | null) {
   };
 }
 
-async function ciclo() {
+const hojeMaceio = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+
+// Lê as métricas de desempenho de cada post (alcance, visualizações, salvos, compartilhamentos,
+// tempo assistido). Posts novos atualizam a cada hora, os antigos uma vez por dia.
+async function insights(forcar = false) {
+  if (!TOKEN || !UID) return { erro: "Faltam os segredos IG_ACCESS_TOKEN e IG_USER_ID." };
+  const agora = Date.now();
+  const { data: posts } = await admin.from("ig_posts").select("id, product_type, posted_at, insights_at, insights_erro").order("posted_at", { ascending: false }).limit(30);
+  const devidos = (posts ?? []).filter((x) => {
+    if (forcar || !x.insights_at) return true;
+    const idade = agora - new Date(x.insights_at).getTime();
+    if (x.insights_erro) return idade > 15 * 60e3; // com erro, tenta de novo logo (ex.: depois de trocar o token)
+    const novo = x.posted_at && agora - new Date(x.posted_at).getTime() < 7 * 86400e3;
+    return idade > (novo ? 55 * 60e3 : 23 * 3600e3);
+  });
+  let lidos = 0;
+  const erros: string[] = [];
+  for (const x of devidos) {
+    const reel = x.product_type === "REELS";
+    const base = "reach,saved,shares,total_interactions,views";
+    // Se o Instagram recusar uma métrica, a chamada inteira falha: por isso cai para conjuntos menores.
+    const conjuntos = reel
+      ? [`${base},ig_reels_avg_watch_time,ig_reels_video_view_total_time`, base, "reach,saved,shares,total_interactions"]
+      : [base, "reach,saved,shares,total_interactions"];
+    let r: Resp | null = null;
+    for (const c of conjuntos) {
+      r = await ig(`${x.id}/insights?metric=${c}`);
+      if (r.ok) break;
+      // Falta de permissão ou token inválido: tentar com menos métricas não adianta.
+      if ([10, 190, 200].includes(Number(r.data?.error?.code))) break;
+    }
+    if (!r || !r.ok) {
+      const motivo = r ? msgErro(r) : "sem resposta";
+      erros.push(motivo);
+      await admin.from("ig_posts").update({ insights_at: new Date().toISOString(), insights_erro: motivo.slice(0, 300) }).eq("id", x.id);
+      continue;
+    }
+    const v: Record<string, number> = {};
+    for (const m of (r.data.data ?? []) as any[]) v[m.name] = Number(m.values?.[0]?.value ?? m.total_value?.value ?? 0);
+    await admin.from("ig_posts").update({
+      views: v.views ?? null,
+      reach: v.reach ?? null,
+      saves: v.saved ?? null,
+      shares: v.shares ?? null,
+      interactions: v.total_interactions ?? null,
+      avg_watch_ms: v.ig_reels_avg_watch_time != null ? Math.round(v.ig_reels_avg_watch_time) : null,
+      total_watch_ms: v.ig_reels_video_view_total_time != null ? Math.round(v.ig_reels_video_view_total_time) : null,
+      insights_at: new Date().toISOString(),
+      insights_erro: null,
+    }).eq("id", x.id);
+    lidos++;
+  }
+
+  // Alcance e visualizações da conta nos últimos 28 dias (melhor esforço), guardados no retrato de hoje.
+  if (devidos.length || forcar) {
+    const ate = Math.floor(agora / 1000);
+    const a = await ig(`${UID}/insights?metric=reach,views&period=day&metric_type=total_value&since=${ate - 28 * 86400}&until=${ate}`);
+    if (a.ok) {
+      const t: Record<string, number> = {};
+      for (const m of (a.data.data ?? []) as any[]) t[m.name] = Number(m.total_value?.value ?? 0);
+      await admin.from("ig_account_daily").upsert({ day: hojeMaceio(), reach: t.reach ?? null, views: t.views ?? null }, { onConflict: "day" });
+    } else erros.push(`conta: ${msgErro(a)}`);
+  }
+  return { lidos, tentados: devidos.length, erros: [...new Set(erros)].slice(0, 3) };
+}
+
+async function ciclo(forcarInsights = false) {
   const s = await sincronizar();
   if ((s as { erro?: string }).erro) return { sincronizacao: s };
   const f = await funil();
   const c = await conversas();
-  return { sincronizacao: s, funil: f, conversas: c };
+  const i = await insights(forcarInsights).catch((e) => ({ erro: (e as Error).message }));
+  return { sincronizacao: s, funil: f, conversas: c, insights: i };
 }
 
 Deno.serve(async (req) => {
@@ -281,7 +352,8 @@ Deno.serve(async (req) => {
   if (!quem) return json({ erro: "Não autorizado." }, 401);
   const b = await req.json().catch(() => ({}));
   try {
-    if (b.acao === "ciclo") return json(await ciclo());
+    if (b.acao === "ciclo") return json(await ciclo(b.forcar === true));
+    if (b.acao === "insights") return json(await insights(true));
     if (quem === "admin") {
       if (b.acao === "enviar" && typeof b.thread_id === "string") return json(await enviar(b.thread_id, String(b.texto ?? "")));
       if (b.acao === "simular") return json(await simular(String(b.texto ?? ""), typeof b.post_id === "string" ? b.post_id : null));

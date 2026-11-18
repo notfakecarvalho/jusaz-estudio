@@ -157,11 +157,22 @@ function volta(caminho: string, erro?: string, ok?: string): never {
 
 export async function atualizarInstagram() {
   const sb = await supabaseServer();
-  const { data, error } = await sb.functions.invoke("instagram", { body: { acao: "ciclo" } });
+  const { data, error } = await sb.functions.invoke("instagram", { body: { acao: "ciclo", forcar: true } });
   revalidatePath("/", "layout");
   const erro = error?.message ?? data?.sincronizacao?.erro;
   if (erro) volta("/instagram", String(erro));
   volta("/instagram", undefined, "Instagram atualizado.");
+}
+
+export async function atualizarInsights() {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.functions.invoke("instagram", { body: { acao: "ciclo", forcar: true } });
+  revalidatePath("/", "layout");
+  const erro = error?.message ?? data?.sincronizacao?.erro;
+  if (erro) volta("/insights", String(erro));
+  const i = data?.insights as { lidos?: number; erros?: string[] } | undefined;
+  if (i && !i.lidos && i.erros?.length) volta("/insights", `O Instagram não liberou as métricas: ${i.erros[0]}`);
+  volta("/insights", undefined, "Métricas atualizadas.");
 }
 
 export async function tentarDeNovo(formData: FormData) {

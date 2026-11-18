@@ -90,6 +90,12 @@ export type IgAccount = {
 export type IgPost = {
   id: string; caption: string | null; media_type: string | null; product_type: string | null; permalink: string | null;
   thumb_url: string | null; posted_at: string | null; likes: number; comments_count: number; video_id: string | null;
+  views: number | null; reach: number | null; saves: number | null; shares: number | null; interactions: number | null;
+  avg_watch_ms: number | null; total_watch_ms: number | null; insights_at: string | null; insights_erro: string | null;
+};
+export type IgDia = {
+  day: string; followers: number | null; follows: number | null; media_count: number | null;
+  reach: number | null; views: number | null;
 };
 export type IgFlow = {
   id: string; name: string; keyword: string; post_id: string | null; reply_public: string; dm_text: string;

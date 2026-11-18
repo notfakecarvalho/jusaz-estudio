@@ -23,9 +23,11 @@ export default async function Hoje() {
   }
 
   const s = video.scripts;
-  const job = await ultimoJob(video.id);
   const sb = await supabaseServer();
-  const { data: ig } = await sb.from("connections").select("*").eq("kind", "instagram").maybeSingle<Connection>();
+  const [job, { data: ig }] = await Promise.all([
+    ultimoJob(video.id),
+    sb.from("connections").select("*").eq("kind", "instagram").maybeSingle<Connection>(),
+  ]);
   const igOk = ig?.status === "conectado";
   const falado = textoFalado(s);
   const legenda = video.caption ?? s.caption;

@@ -7,7 +7,9 @@ import { useEffect } from "react";
 export function AutoRefresh({ segundos = 30 }: { segundos?: number }) {
   const router = useRouter();
   useEffect(() => {
-    const t = setInterval(() => router.refresh(), segundos * 1000);
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") router.refresh();
+    }, segundos * 1000);
     return () => clearInterval(t);
   }, [router, segundos]);
   return null;
