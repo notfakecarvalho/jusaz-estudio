@@ -1,6 +1,8 @@
+// @ts-nocheck
+'use client'
 import React, { useState } from 'react'
 
-export const MARCA = 'Mira'
+export const MARCA = 'edita.ai'
 
 const rr = (x, y, w, h, r) => `M${x + r} ${y}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${h - 2 * r}a${r} ${r} 0 0 1 -${r} ${r}h-${w - 2 * r}a${r} ${r} 0 0 1 -${r} -${r}v-${h - 2 * r}a${r} ${r} 0 0 1 ${r} -${r}z`
 const ci = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 -${2 * r} 0`
@@ -53,8 +55,8 @@ export function Logo() {
 }
 
 export function Marca({ link }) {
-  const c = <><Logo /><span>{MARCA.toLowerCase()}</span></>
-  return link ? <a className="marca" href="#/" style={{ textDecoration: 'none' }} aria-label={MARCA + ', início'}>{c}</a> : <div className="marca">{c}</div>
+  const c = <><Logo /><span>{MARCA}</span></>
+  return link ? <a className="marca" href="/reels" style={{ textDecoration: 'none' }} aria-label={MARCA + ', início'}>{c}</a> : <div className="marca">{c}</div>
 }
 
 export function Selo({ children, escuro }) {
@@ -105,3 +107,14 @@ export function Copiar({ texto }) {
 
 export const fmtDur = s => { if (s == null) return ''; const t = Math.round(s); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0') }
 export const fmtTam = b => (b >= 1e9 ? (b / 1e9).toFixed(1) + ' GB' : (b / 1e6).toFixed(b >= 1e8 ? 0 : 1) + ' MB')
+
+export function Cab({ titulo, sub, acao }) {
+  return (
+    <header className="banda">
+      <div className="miolo">
+        <div><h1>{titulo}</h1>{sub && <p>{sub}</p>}</div>
+        {acao && <div className="acoes">{acao}</div>}
+      </div>
+    </header>
+  )
+}

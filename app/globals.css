@@ -64,6 +64,8 @@ a:hover { color: var(--primary-hover); }
 .brand strong { font: 700 17px 'Inter Variable', system-ui, sans-serif; letter-spacing: -0.02em; display: block; line-height: 1.15; }
 .brand span { font-size: 12px; color: var(--muted); }
 .nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-grupo { margin: 14px 12px 4px; font: 600 11px/1 'Inter Variable', system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.nav-grupo:first-child { margin-top: 4px; }
 .nav a {
   display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--r-sm);
   color: var(--ink-2); text-decoration: none; font-weight: 500;

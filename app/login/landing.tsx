@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import "./landing.css";
 
-const MARCA = "Mira";
+const MARCA = "edita.ai";
 
 const IC: Record<string, string[]> = {
   shieldCheck: ["M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z", "m9 12 2 2 4-4"],

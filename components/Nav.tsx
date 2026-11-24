@@ -41,10 +41,30 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M7 3v18M17 3v18M3 12h18" />
     </>
   ),
+  estilos: <path d="m12 2 10 5-10 5L2 7zM2 17l10 5 10-5M2 12l10 5 10-5" />,
+  creditos: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" />
+    </>
+  ),
+  agente: (
+    <>
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8M12 16v4" />
+    </>
+  ),
   ideias: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" />,
 };
 
-const ITENS = [
+const REELS = [
+  { href: "/reels", key: "reels", label: "Reels" },
+  { href: "/reels/estilos", key: "estilos", label: "Estilos" },
+  { href: "/reels/creditos", key: "creditos", label: "Créditos" },
+  { href: "/reels/agente", key: "agente", label: "Agente local" },
+];
+
+const ESTUDIO = [
   { href: "/", key: "hoje", label: "Hoje" },
   { href: "/roteiros", key: "roteiros", label: "Roteiros" },
   { href: "/fila", key: "fila", label: "Fila" },
@@ -56,34 +76,39 @@ const ITENS = [
   { href: "/mensagens", key: "mensagens", label: "Mensagens" },
   { href: "/ideias", key: "ideias", label: "Ideias" },
   { href: "/conexoes", key: "conexoes", label: "Conexões" },
-  { href: "/reels/index.html", key: "reels", label: "Reels (Mira)", externo: true },
 ];
 
-export function Nav() {
+type Item = { href: string; key: string; label: string };
+
+export function Nav({ admin = false }: { admin?: boolean }) {
   const path = usePathname();
+  const ativo = (href: string) => {
+    if (href === "/") return path === "/";
+    if (href === "/reels") return path.startsWith("/reels") && !["estilos", "creditos", "agente"].some((x) => path === "/reels/" + x);
+    return path.startsWith(href);
+  };
+  const lista = (itens: Item[]) =>
+    itens.map((i) => {
+      const on = ativo(i.href);
+      return (
+        <Link key={i.href} href={i.href} className={on ? "on" : ""} aria-current={on ? "page" : undefined}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {ICONS[i.key]}
+          </svg>
+          {i.label}
+        </Link>
+      );
+    });
   return (
     <nav className="nav" aria-label="Principal">
-      {ITENS.map((i) => {
-        const on = i.href === "/" ? path === "/" : path.startsWith(i.href);
-        if ("externo" in i && i.externo) {
-          return (
-            <a key={i.href} href={i.href}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                {ICONS[i.key]}
-              </svg>
-              {i.label}
-            </a>
-          );
-        }
-        return (
-          <Link key={i.href} href={i.href} className={on ? "on" : ""} aria-current={on ? "page" : undefined}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {ICONS[i.key]}
-            </svg>
-            {i.label}
-          </Link>
-        );
-      })}
+      <span className="nav-grupo">Reels</span>
+      {lista(REELS)}
+      {admin && (
+        <>
+          <span className="nav-grupo">Estúdio JusAz</span>
+          {lista(ESTUDIO)}
+        </>
+      )}
     </nav>
   );
 }

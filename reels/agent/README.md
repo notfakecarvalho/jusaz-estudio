@@ -1,4 +1,4 @@
-# Agente local do Estúdio de Reels
+# Agente local do edita.ai
 
 Guarda os seus vídeos e faz o render no seu computador.
 

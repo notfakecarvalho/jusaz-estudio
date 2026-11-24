@@ -2,10 +2,10 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-export const SUPABASE_URL = 'https://owucqvwdznrhqkcoliyh.supabase.co'
-export const SUPABASE_KEY = 'sb_publishable_tIWJYdyxAWfLLOpI56a3fg_1VoQaUwM'
+export const SUPABASE_URL = 'https://paifoylplzokkqqzytkk.supabase.co'
+export const SUPABASE_KEY = 'sb_publishable_igMagOaJaX_VOW1OxxHoCg_PbLROHfk'
 export const PORTA = 47821
-export const VERSAO = '0.2.0'
+export const VERSAO = '0.3.0'
 
 const DIR = path.join(os.homedir(), '.estudio-reels')
 const ARQ = path.join(DIR, 'config.json')
@@ -27,5 +27,5 @@ export function pastaBase() {
 }
 export function origensPermitidas() {
   const c = lerConfig()
-  return ['https://2netxje4zyf4.ample.run', 'https://jusaz-estudio.vercel.app', 'http://localhost:5173', 'http://127.0.0.1:5173', ...(c.origens || [])]
+  return ['https://jusaz-estudio.vercel.app', 'http://localhost:3000', 'http://127.0.0.1:3000', ...(c.origens || [])]
 }

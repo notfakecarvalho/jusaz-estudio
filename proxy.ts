@@ -27,14 +27,20 @@ export async function proxy(request: NextRequest) {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-  if (entrou && noLogin) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+  if (entrou && !publica) {
+    // Só o administrador do estúdio vê as telas do Estúdio JusAz; os demais usuários ficam em /reels.
+    const { data: adm } = await supabase.from("admins").select("user_id").eq("user_id", data!.claims.sub).maybeSingle();
+    const admin = !!adm;
+    const emReels = request.nextUrl.pathname.startsWith("/reels");
+    if (noLogin || (!admin && !emReels)) {
+      const url = request.nextUrl.clone();
+      url.pathname = admin ? "/" : "/reels";
+      return NextResponse.redirect(url);
+    }
   }
   return response;
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|ico|tgz)$).*)"],
 };

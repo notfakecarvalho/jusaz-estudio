@@ -5,8 +5,8 @@ import "@fontsource/space-grotesk/700.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Estúdio JusAz",
-  description: "Um vídeo por dia, do roteiro ao Instagram.",
+  title: "edita.ai",
+  description: "Edição profissional de Reels, com o seu vídeo sempre no seu computador.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -5,10 +5,14 @@ import type { Connection } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const sb = await supabaseServer();
-  const [{ data: worker }, { count: fila }] = await Promise.all([
-    sb.from("connections").select("*").eq("kind", "render_worker").maybeSingle<Connection>(),
-    sb.from("render_jobs").select("id", { count: "exact", head: true }).in("status", ["queued", "running"]),
-  ]);
+  const { data: admin } = await sb.rpc("is_admin");
+  const eAdmin = admin === true;
+  const [{ data: worker }, { count: fila }] = eAdmin
+    ? await Promise.all([
+        sb.from("connections").select("*").eq("kind", "render_worker").maybeSingle<Connection>(),
+        sb.from("render_jobs").select("id", { count: "exact", head: true }).in("status", ["queued", "running"]),
+      ])
+    : [{ data: null }, { count: 0 }];
   // Online = o worker deu sinal de vida nos últimos 5 minutos.
   const online =
     worker?.status === "conectado" && !!worker.checked_at && Date.now() - new Date(worker.checked_at).getTime() < 5 * 60 * 1000;
@@ -17,14 +21,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="shell">
       <aside className="side">
         <div className="brand">
-          <div className="logo">Az</div>
+          <div className="logo">e</div>
           <div>
-            <strong>JusAz</strong>
-            <span>Estúdio de vídeos</span>
+            <strong>edita.ai</strong>
+            <span>Edição de Reels</span>
           </div>
         </div>
-        <Nav />
+        <Nav admin={eAdmin} />
         <div className="side-foot">
+          {eAdmin && (
           <div className="mini">
             <span className="lbl">Worker de render</span>
             <span className="row" style={{ gap: 8, fontWeight: 600 }}>
@@ -35,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               {fila ? `${fila} na fila de render` : "Fila vazia"}
             </span>
           </div>
+          )}
           <form action={sair}>
             <button className="btn btn-s btn-sm" style={{ width: "100%" }}>Sair</button>
           </form>

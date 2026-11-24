@@ -1,9 +1,9 @@
-# Mira: estúdio de Reels
+# edita.ai: agente local
 
-Plataforma multiusuário de edição de Reels. O vídeo fica no computador de cada usuário (agente local com ffmpeg e render); a nuvem guarda só texto, andamento e créditos.
+O edita.ai é uma plataforma só (app Next.js na raiz: landing, Reels, Estilos, Créditos, Agente local e o Estúdio JusAz para o administrador), com um login e um banco Supabase.
 
-- `web/`: site (Vite + React) com landing, pedidos, estilos, créditos e página do agente. Publicado como site estático (`npm install && npm run build`, saída em `dist/`).
-- `agent/`: agente local (Node 20+). Estilo simples e estilo "Interface animada (VSL)".
-- `../supabase/functions/planejar-reel`: função que monta o plano de edição.
+- `agent/`: agente local (Node 20+). Guarda os vídeos e faz o render no computador do usuário. Estilo simples e estilo "Interface animada (VSL)". O pacote para download fica em `public/agente.tgz`.
+- `../supabase/functions/planejar-reel` e `planejar-edicao`: funções de IA que montam o plano de edição (precisam do segredo `ANTHROPIC_API_KEY`).
+- `../app/(app)/reels/`: telas de Reels dentro do app.
 
-Não altera o app Next.js do Estúdio JusAz (pastas `app/`, `components/`, `lib/`) nem as funções existentes em `supabase/functions/`.
+Para regerar o pacote do agente: `tar --exclude=node_modules -czf public/agente.tgz -C reels agent` (na raiz do repositório).
