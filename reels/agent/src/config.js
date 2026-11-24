@@ -27,5 +27,5 @@ export function pastaBase() {
 }
 export function origensPermitidas() {
   const c = lerConfig()
-  return ['https://2netxje4zyf4.ample.run', 'http://localhost:5173', 'http://127.0.0.1:5173', ...(c.origens || [])]
+  return ['https://2netxje4zyf4.ample.run', 'https://jusaz-estudio.vercel.app', 'http://localhost:5173', 'http://127.0.0.1:5173', ...(c.origens || [])]
 }

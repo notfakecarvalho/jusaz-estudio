@@ -35,6 +35,12 @@ const ICONS: Record<string, React.ReactNode> = {
   insights: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
   funil: <path d="M3 4h18l-7 9v6l-4 2v-8z" />,
   mensagens: <path d="M4 5h16v11H9l-5 4z" />,
+  reels: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M7 3v18M17 3v18M3 12h18" />
+    </>
+  ),
   ideias: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" />,
 };
 
@@ -50,6 +56,7 @@ const ITENS = [
   { href: "/mensagens", key: "mensagens", label: "Mensagens" },
   { href: "/ideias", key: "ideias", label: "Ideias" },
   { href: "/conexoes", key: "conexoes", label: "Conexões" },
+  { href: "/reels/index.html", key: "reels", label: "Reels (Mira)", externo: true },
 ];
 
 export function Nav() {
@@ -58,6 +65,16 @@ export function Nav() {
     <nav className="nav" aria-label="Principal">
       {ITENS.map((i) => {
         const on = i.href === "/" ? path === "/" : path.startsWith(i.href);
+        if ("externo" in i && i.externo) {
+          return (
+            <a key={i.href} href={i.href}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {ICONS[i.key]}
+              </svg>
+              {i.label}
+            </a>
+          );
+        }
         return (
           <Link key={i.href} href={i.href} className={on ? "on" : ""} aria-current={on ? "page" : undefined}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

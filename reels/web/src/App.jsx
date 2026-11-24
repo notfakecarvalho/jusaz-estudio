@@ -584,7 +584,7 @@ function Agente() {
     <section className="painel"><h2>Instalar</h2>
       <ol className="passos">
         <li><div><span>Instale o Node 20 ou mais novo (nodejs.org) e o ffmpeg. No Mac:</span>{cmd('brew install ffmpeg')}</div></li>
-        <li><div><span>Baixe o agente e descompacte.</span><div><a className="btn sec peq" href="/agente.tgz" download><Icon n="download" s={14} />Baixar o agente</a></div>{cmd('tar -xzf agente.tgz')}</div></li>
+        <li><div><span>Baixe o agente e descompacte.</span><div><a className="btn sec peq" href="./agente.tgz" download><Icon n="download" s={14} />Baixar o agente</a></div>{cmd('tar -xzf agente.tgz')}</div></li>
         <li><div><span>Na pasta <code>agent</code>, instale e inicie.</span>{cmd('cd agent && npm install && npm start')}</div></li>
         <li><div><span>Entre com o e-mail e a senha desta conta e deixe a janela aberta.</span></div></li>
       </ol>
